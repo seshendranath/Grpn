@@ -1,0 +1,3703 @@
+Copyright (c) 2015 Teradata Corporation.
+ALL RIGHTS RESERVED
+
+
+                              Teradata Connector for Hadoop
+
+
+Product: Teradata Connector for Hadoop
+Version: 1.4.2
+
+Product Dependencies:
+    1. Teradata GSS client driver                        (tdgssconfig)
+    2. Teradata JDBC driver                              (terajdbc)
+
+System Requirements:
+    1. JRE/JDK
+
+Contents
+    1.0 Introduction
+    2.0 Release Content
+    3.0 Requirements
+    4.0 Installation/Uninstallation
+    5.0 Plugin Design
+    6.0 Command-Line Parameters
+    7.0 Basic Usage
+    8.0 Restrictions
+    9.0 Limitations/Issues
+
+1.0 Introduction
+
+    Teradata Connector for Hadoop is a Hadoop-based data integration tool
+    that supports high performance parallel bi-directional data movement and
+    transformations between data repositories and products in enterprise 
+    ecosystems. It provides a rich set of scalable built-in processing
+    capabilities and extensible APIs for customers to execute complex data 
+    integration processes with peak data volumes.
+
+2.0 Release Content
+
+    2.1 Supported Functionalities
+
+        1. Data Transfer
+
+           a) Teradata
+              i.   Import table from Teradata
+                   method: split.by.hash, split.by.value, split.by.partition
+                           split.by.amp
+              ii.  Import query from Teradata
+                   method: split.by.partition
+              iii. Export to empty/non-empty Teradata table
+                   method: batch.insert, internal.fastload
+           b) HDFS
+              i.   Import data from HDFS
+              ii.  Export data to HDFS
+           c) Hive
+              i.   Import data from Hive table
+              ii.  Export data to Hive table
+                   1) Create non-existing Hive table.
+                   2) Add partitions to existing Hive table.
+           d) HCat
+              i.   Import data from HCat
+              ii.  Export data to HCat
+
+        2. Schema Mapping
+
+           All fields (columns)
+           Selected fields (columns)
+           Null / not null values
+           Data type conversions
+           Data format conversions
+
+        3. Remote Execution
+
+           Templeton
+           Oozie
+
+        4. Data Types
+
+           a) Teradata
+
+              BIGINT
+              BYTEINT
+              INTEGER
+              SMALLINT
+              DOUBLE PRECISION
+              FLOAT
+              REAL
+              DECIMAL (n,m)
+              NUMERIC (n,m)
+              NUMBER (n,m)
+              CHAR (n)
+              VARCHAR (n)
+              LONG VARCHAR
+              DATE
+              TIME (n)
+              TIME (n) WITH TIME ZONE
+              TIMESTAMP (n)
+              TIMESTAMP (n) WITH TIME ZONE
+              PERIOD (DATE)
+              PERIOD (TIME (n))
+              PERIOD (TIMESTAMP (n))
+              INTERVAL YEAR (n)
+              INTERVAL YEAR (n) to MONTH
+              INTERVAL MONTH (n)
+              INTERVAL DAY (n)
+              INTERVAL DAY (n) to HOUR
+              INTERVAL DAY (n) to MINUTE
+              INTERVAL DAY (n) to SECOND (m)
+              INTERVAL HOUR (n)
+              INTERVAL HOUR (n) to MINUTE
+              INTERVAL HOUR (n) to SECOND (m)
+              INTERVAL MINUTE (n)
+              INTERVAL MINUTE (n) to SECOND (m)
+              INTERVAL SECOND (n)
+              BYTE (n)    (See Limitations)
+              VARBYTE (n) (See Limitations)
+              BLOB        (See Limitations)
+              CLOB        (See Limitations)
+              ARRAY       (See Limitations)
+
+           b) Hive
+
+              BIGINT
+              SMALLINT
+              TINYINT
+              INT
+              DECIMAL
+              FLOAT
+              DOUBLE
+              STRING
+              BOOLEAN
+              MAP         (See Limitations)
+              ARRAY       (See Limitations)
+              STRUCT      (See Limitations)
+              TIMESTAMP
+
+           c) Avro
+
+              LONG
+              INT
+              FLOAT
+              DOUBLE
+              STRING
+              BOOLEAN
+              BYTES
+              NULL
+              RECORDS      (See Limitations)
+              ENUMS        (See Limitations)
+              MAPS         (See Limitations)
+              ARRAYS       (See Limitations)
+              UNIONS       (See Limitations)
+              FIXED        (See Limitations)
+
+        5. File Storage Format
+
+           a) HDFS
+
+              TextFile
+              AvroFile
+
+           b) Hive
+
+              SequenceFile
+              TextFile
+              RCFile
+              ORCFile
+
+    2.2 New Features Included in the Release
+    
+        Included features in the 1.4.2 release
+
+         TDCH-1059: Have configureOozie utilize latest certified configuration
+                    for non-cert'd platforms (IE use CDH 5.4 config for CDH 5.5)
+         TDCH-870: Extend mapper throttle functionality to support retry/timeout
+         TDCH-360: Update TDCH Tutorial to reflect TDCH 1.3.x architecture
+    
+        Included features in the 1.4.1 release
+
+         TDCH-947: Extend configureOozie script to assign default ports for Resource
+                   Manager based on distribution.
+         TDCH-905: Extend user defined converters to remove package requirement
+         TDCH-848: Batch.insert to support preemption
+         TDCH-615: Provide users with a mechanism to signal that TDCH should error
+                   out when CHAR/VARCHAR truncation occurs
+
+        Included features in the 1.4.0 release
+
+    	 TDCH-861: Workflows generated by configureOozie script support HA
+    	           and Kerberos enabled clusters
+    	 TDCH-836: TDCH jobs only use slots available for the given queue
+    	           when new '-throttlemappers true' argument is supplied
+    	 TDCH-729: Support Hive RCFile tables which utilize the  
+    	           non-default RCFile serde 
+    	 TDCH-331: Support for the Hive Decimal datatype
+    	 TDCH-298: Merge all distribution-specific TDCH jars into two 
+    	           hadoop-specific TDCH jars (hadoop1.x / hadoop2.x)
+
+    	Included features in the 1.3.4 release
+
+    	a) TDCH jobs can use credential information from Teradata Wallet
+    	b) Support for Kerberos-enabled clusters
+    	c) Users can define database where internal.fastload error tables
+    	   reside via -errortabledatabase command line parameter or
+    	   tdch.output.teradata.error.table.database 
+    	d) Split.by.amp can be run against views (will utilize spool)
+    
+    	Included features in the 1.3.1 release
+    	
+    	a) RPM based distribution with support for multiple TDCH installations
+    	   in both the Linux filesystem and in HDFS
+
+        Included features in the 1.3 release
+
+        a) Change the name/package of the tool class, and the old name may be
+           deprecated in a future release.
+        b) Support new plugin architecture, see section 5.0 for more information.
+        c) Add -errorlimit parameter to support error data check for
+           internal.fastload job. If the number of error rows exceeds the
+           specified value, the job will fail.
+        d) Support data format conversion of String type when DATE/TIME/TIMESTAMP
+           data type conversions are involved.
+        e) Enhance logic to classify internal.fastload job as JDBC job
+           classified by TASM rule.
+
+        Included features in the 1.2 release
+
+        a) Support various URI schema path specification for Avro schema file
+           and Hive configuration file.
+        b) Support Teradata 14.0 Number data type.
+        c) Support Teradata 14.10 Extended Object Names. With Teradata 14.10, 
+           object names can have up to and including 128 characters. Nearly the 
+           complete repertoire of Unicode characters are allowed in an object 
+           name. (See Limitations)
+        d) Display the current TDCH version number in console output.
+
+        Included features in the 1.1 release
+
+        a) Add ORC file format support.
+        b) Add Avro file format support.
+
+        Included features in the 1.0.10 release
+
+        a) Add -numpartitionsinstaging parameter for split.by.partition method
+           to specify different partition number from mapper number.
+        b) Report exception for unrecognized parameters.
+
+        Included features in the 1.0.9b release
+
+        a) Add -usexviews parameter for users that do not have system view and
+           table accessing privileges.
+
+        Included features in the 1.0.9 release
+
+        a) Provide the progress report of job for internal.fastload method.
+        b) Record the output of job client into an HDFS file. (For Studio
+           Integration)
+
+        Included features in the 1.0.8 release
+
+        a) Support importing data into existing non empty partitions of hive
+           partitioned table.
+        b) Add -queryband parameter to support session level query band.
+        c) Add the following data types support for partition column: TINYINT,
+           SMALLINT, INT, BIGINT, FLOAT, DOUBLE, TIMESTAMP, BOOLEAN.
+        d) Support more characters in string value of a partition column of hive
+           table,(e.g., '%', ':', '/', '#'). (see section 8.1 for not-supported
+           characters)
+        e) Allow user to specify error table name prefix in internal.fastload
+           method. User can provide a name as error table name's prefix with
+           -errortablename parameter.
+        f) Add -keepstagetable parameter. If the parameter is set to true, the
+           staging table will be kept when export job fails during inserting
+           data from staging table to target table.
+
+        Included features in the 1.0.7 release
+
+        a) Add -accesslock parameter for importing data from Teradata to improve
+           concurrency. If the parameter is set to true, the import job will not
+           be blocked by other concurrent accesses against the same table.
+        b) Add the support for importing data into non existing partitions of an
+           existing hive partitioned table. 
+        c) Allow a Hive configuration file path to be specified by the -hiveconf
+           parameter, so the connector can access it in either HDFS or a local 
+           file System. This feature would enable users to run hive
+           import/export jobs on any node of a Hadoop cluster (see section 8.3)
+        d) After Teradata 14.10 release, split.by.amp import method is supported.
+           (see section 7.1(d))
+
+        Included features in the 1.0.6 release
+
+        a) Add the support for user specified text format parameters including:
+           escapedby, enclosedby, nullstring and nullnonstring(see section 9.4).
+        b) Add the support for using a non-printing character as the field|line
+           separator(see section 9.5)
+
+        Included features in the 1.0.1 - 1.0.5 releases
+
+        a) Add split.by.hash import method
+        b) Add split.by.value import method
+
+        Included features in the 1.0.0 release
+
+        a) Support remote execution by Templeton and Oozie
+        b) Support quoting reserved words and non-standard ASCII characters
+           in Teradata database/table/column names
+        c) Support Hive Map, Array and Struct data type
+        d) Import to existing Hive table
+        e) Create new Hive table at end of import (if table does not exist)
+        f) Import to Hive partitioned tables
+        g) Export from Hive partitioned tables
+        h) Retrieve automatically Hive table's metadata
+
+        Included features in the 0.80 release
+
+        a) Schema mapping and type conversion with import and export
+        b) Import to Hive RCFile, SequenceFile, TextFile storage format
+        c) Import to HCatalog table with RCFile, SequenceFile, TextFile storage
+           format
+        d) Import to Hive partitioned files
+        e) Export from Hive RCFile, SequenceFile, TextFile storage format
+        f) Export from HCatalog table with RCFile, SequenceFile,TextFile storage
+           format
+        g) Export from Hive partitioned files
+
+        Included features in the 0.40 - 0.50 releases
+
+        a) Use TeradataCombineFileInputFormat to limit number of map tasks
+
+        Included features in the 0.30 release
+
+        a) JDBC Internal Fastload implementation
+
+        Included features in the 0.20 - 22 releases
+
+        a) Insert HDFS delimited text file into Teradata database table via JDBC
+           Fastload
+        b) Move table data or select query results from Teradata database into
+           HDFS
+        c) Insert HDFS delimited text file into Teradata database table via JDBC
+           Batch Insert
+
+    2.3 Problems Fixed in the Release
+    
+         Included fixes in the 1.4.2 release
+
+          TDCH-1096: Avro union to decimal conversions result in data corruption  
+          TDCH-689: String to Timestamp(6) conversions lose nanosecond precision
+          TDCH-550: TDCH utilizes deprecated sun.* classes
+          TDCH-296: Split.by.partition utilizes staging table even when source
+                    table is partitioned
+
+         Included fixes in the 1.4.1 release
+
+          TDCH-934: Task fails with connection reset when launching jobs with 300
+                    mappers
+          TDCH-923: Oozie based TDCH jobs fail with class not found exception on
+                    HDP 2.3
+          TDCH-908: Epoch to DATE conversion doesn't take daylight savings into
+                    account
+          TDCH-903: ORC imports fail on HDP 2.3 (resolved by Hortonworks 
+                    BUG-42834)
+          TDCH-775: User-defined converters with zero-arg constructors cause
+                    'cant find matching constructor' exceptions
+
+         Included fixes in the 1.4.0 release
+    	
+    	  TDCH-872: Empty columns in hdfs files are now treated as nulls
+    	            instead of empty strings
+    	  TDCH-827: Failed insert/select during internal.fastload jobs now
+    	            return non-zero error code
+    	  TDCH-759: ConfigureOozie script support for MapR
+    	  TDCH-754: Jobclientoutput argument support for maprfs
+    	  TDCH-692: Unrecognized command line arguments now displayed in error
+    	            message
+    	  TDCH-686: String to Decimal conversions no longer result in data
+    	            corruption
+    	  TDCH-680: Split column no longer needed for jobs using split.by.hash
+    	            or split.by.value and a single mapper
+    
+    	Included fixes in the 1.3.4 release
+    	
+    	  TDCH-726: Reading ORC tables with Timestamp columns no longer
+    	            ends in String cannot be cast to Timestamp exception
+    	  TDCH-720: TDCH returns non-zero error code after throwing
+    	            unsupported datatype exception
+    	  TDCH-700: TDCH no longer fails to compile with JDK 8
+    	  TDCH-697: Multiple calls to TeradataInternalFastloadRecordWriter
+    	            .close() no longer cause empty batch exceptions
+    	  TDCH-616: Speculative execution is properly disabled in Hadoop 2.x
+    	  TDCH-598: Null values in Time and Timestamp columns no longer cause
+    	            null pointer exceptions
+    	  TDCH-510: Avro jars no longer required when reading/writing textfiles
+    	            in HDFS
+    	  TDCH-256: .template files now reference TDCH 1.3.x config names
+    	
+    	Included fixes in the 1.3.3 release
+    	
+     	  TDCH-519: TDCH jobs using the internal.fastload method that attempt
+     	       	    to export to a table already having so many rows that the
+     	       	    row count cannot be stored in a 32-bit two�s complement 
+     	       	    integer no longer result in a numeric overflow error.
+     	  TDCH-515: TDCH jobs will not experience a slow logon to the Teradata 
+     	       	    Database issue that was causing jobs to stall more than 30
+     	       	    seconds before beginning to send data.
+     	  TDCH-427: The diagnostic message printed when the Teradata output 
+     	       	    postprocessor routine starts is correctly labeled as 
+     	       	    coming from the "output postprocessor".
+     	  TDCH-420: TDCH will attempt to run internal.fastload jobs where the 
+     	       	    user specified number of mappers exceeds the value returned
+     	       	    by ClusterStatus.getMaxMapTasks().
+     	  TDCH-419: TDCH jobs no longer erroneously fail claiming that the 
+     	       	    names of error tables or staging tables are too long.
+     	  TDCH-342: TDCH jobs that export from a hive table partitioned by a 
+     	       	    date column no longer result in a NullPointerException.
+      	  TDCH-335: TDCH internal.fastload jobs that attempt to load LOB values
+     	       	    produce an appropriate error message.
+     	  TDCH-314: An error message regarding the reason for a job failure
+      	       	    will be output even in the case that an error also occurs
+     	       	    during job cleanup.
+     	  TDCH-289: TDCH internal.fastload jobs no longer fail with 
+     	       	    IllegalArgumentException on MapR 3.1, HA enabled clusters.
+     	  TDCH-288: Teradata Database logon information is not visible via the
+     	       	    job_conf.xml file.
+     	  TDCH-273: Reading from hdfs files with blank columns no longer 
+     	       	    results in IndexOutOfBoundsExceptions.
+    
+    	Included fixes in the 1.3.2 release
+    
+    	  TDCH-353: Conversions from Timestamp with Timezone to long
+     	       	    (and vice versa) return incorrect values
+          TDCH-352: Exports from hive tables with binary columns backed 
+     	       	    by rcfiles fail with class cast exception
+          TDCH-309: ConfigurationMappingUtils doesn't overwrite values
+          TDCH-307: FileNotFoundException thrown when hive table exists   
+          TDCH-306: Avro schema file required
+          TDCH-305: Nulls in avro files get converted to empty strings
+          TDCH-303: Issue with escapecharacter / nullstring
+          TDCH-302: Issue with nullnonstring
+          TDCH-287: Export hive tables partitioned by smallint cols
+     	       	    fails with ClassCastException
+          TDCH-286: Data corruption when exporting float cols from 
+     	       	    hive rctable in HDP 2.0
+          TDCH-255: Import to partitioned hcat table causes output
+     	       	    directory already exists error
+    
+    	Included fixes in the 1.3.1 release
+    	
+    	  TDCH-295: Split.by.partition fails when nummappers > num physical parts
+    	  TDCH-281: NoSuchObjectException thrown when hive table does not exist
+    	  TDCH-277: Data corruption when exporting hive table backed by rcfile
+    	  TDCH-266: Fix TIME/TIMESTAMP w/ TZ NULL support; don't try to parse
+     	       	    empty TIME/TIMESTAMP w/ TZ strings
+
+        Included fixes in the 1.3 release
+
+        a) Remove hidden 'teradata.db.custom_parse’ parameter to make the logic
+           of csv handling simple.
+
+        Included fixes in the 1.2.1 release
+
+        a) Fix error with encrypted data by updating JDBC version from
+           14.10.00.17 to 14.10.00.26.
+        b) Add "sel" keyword support for source query.
+        c) Fix incorrect return value of internal.fastload job when importing
+           hive table is empty.
+        d) Fix the bug that "-nummappers" parameter doesn't take effect when 
+           exporting Avro file format.
+
+        Included fixes in the 1.2 release
+
+        a) Provide meaningful error messages for NPE (Null Pointer Exception),
+           when the -targetpaths parameter is missing in a HDFS import job.
+        b) Fix dead lock issues caused by open JDBC control session when 
+           internal.fastload job fails.
+        c) Send keep-alive message between job client and finished mappers to
+           avoid socket connection being killed by firewall.
+
+        Included fixes in the 1.1.1 release
+
+        a) Fix RCFile SerDe incompatibility between TDCH1.1 and Hive0.12.
+        b) Fix support of BLOB data type in HDFS text file format for import
+           jobs.
+
+        Included fixes in the 1.1 release
+
+        a) Modified the logic which checks if a Teradata target table is empty
+           for export methods.
+        b) Modified the staging/error table naming logic to prevent duplicate
+           table names generated when multiple concurrent jobs.
+        c) Modified the logic which gets current user name for a Hive job, to 
+           prevent invalid path generated in a secure Hadoop environment. 
+
+        Included fixes in the 1.0.10 release
+
+        a) Incorrect nullable property setting of a column selected from a source
+           query.
+        b) Ambiguous table name reference for Teradata metadata tables or views.
+        c) JDBC 14.10 incompatible problem.
+
+        Included fixes in the 1.0.9b release
+
+        a) The special characters of Regex cannot be included in separator 
+           parameter.
+
+        Included fixes in the 1.0.9a release
+
+        a) The characters presented by Unicode format cannot be included in 
+           separator parameter, such as '\u001a'.
+
+        Included fixes in the 1.0.9 release
+
+        a) Ambiguous partition column reference for split.by.partition method.  
+
+        Included fixes in the 1.0.8 release
+
+        a) Unified case-sensitivity checking for all parameters. Please see
+           section 5.3.
+        b) A partition columns mismatch issue for query based import job. 
+           This problem occurs when following conditions are satisfied:
+           1) A source query is provided for importing data from Teradata
+              to Hadoop.
+           2) Specified source fields and target fields are subset of the
+              selected columns of the query.
+           3) Source and target field names for schema mapping are provided.
+        c) Inappropriate warning reported for export job failure caused by
+           inserting into target table from staging table.
+        d) The error tables generated by internal fastload are not correctly
+           dropped at the end of job.
+        e) Incorrect process of redundant white space(more than one adjacent 
+           white space, white space between column definition and comma, etc.)
+           in user provided hive table and partition schema option.(Temporarily
+           do not support redundant white space in complex types definition)
+        f) Fix unexpected syntax error when adding partitions to existing hive 
+           table with hive table’s database specified.
+
+        Included fixes in the 1.0.7 release
+
+        a) Inappropriate exceptions reported from a query-based import job.
+           Only the split.by.partition method supports a query as an import
+           source. A proper exception will be thrown if a non split.by.partition
+           import job is issued with the "sourcequery" parameter. 
+        b) One gets an error when the user account used to start Templeton
+           is different from the user account used by Templeton to run a
+           connector job.
+        c) A time-out issue for large data import jobs. In the case of a 
+           large-size data import, the Teradata database may need a long
+           time to produce the results in a spool table before the subsequent
+           data transfer. If this exceeds the time-out limitation of a 
+           mapper before the data transfer starts, the mapper would be killed. 
+           With this fix, the mapper would be kept alive instead. 
+        d) A timeout issue for export jobs using internal.fastload. The 
+           internal.fastload export method requires synchronization of 
+           all mappers at the end of their execution. 
+           If one mapper finishes its data transfer earlier than some 
+           others, it has to wait for other mappers to complete their 
+           work.  If the wait exceeds the time-out of an idle task, 
+           the mapper would be killed by its task tracker. With this fix,
+           that mapper would be kept alive instead. 
+        e) Fix the limitation that the user should have authorization to
+           create local directory while executing Hive job on one node 
+           without Hive configuration (hive-site.xml) file. Before the 
+           bug fixing, the TDCH need to copy the file from HDFS to local
+           file system. 
+        f) Case-sensitivity problems with the following parameters: "-jobtype", 
+           "-fileformat", and "-method". With this fix, values of these 
+           parameters do not have to case-sensitive any more.
+        g) Incorrect delimiters used by an export job for Hive tables in 
+           RCFileFormat. 
+
+        Included fixes in the 1.0.6 release
+
+        a) Hive table owner attribute for an import job was not set properly 
+        b) JDBC URL CHARSET set to lower case utf8/utf16 gets the exception 
+           character set not supported by JDBC driver 
+        c) Issues with column name case sensitivity cause the exception 
+           field name is not found in schema 
+        d) Incorrect calculation of target table column count for a Hive 
+           export job with source table schema and source partition 
+           schema gets the exception source and target field count are
+           different 
+        e) getListTableSQL() returns not only tables but also views
+
+        Included fixes in the 1.0.5 release
+
+        a) Cannot load data into a non-default Hive database
+
+        Included fixes in the 1.0.1 - 1.0.4 releases
+
+        a) New split.by methods do not support where condition
+        b) BLOB import gets an "String cannot be cast to [B" exception
+        c) Make TeradataConnection's getCurrentDatabase() public
+        d) Columns with Period and Interval data type gets an data type not 
+           convertible exception
+        e) Exit code exceeds Linux 0-255 value limit
+        f) partition.stage method is renamed to split.by.partition to be
+           consistent with new import method naming
+        g) No data is imported into Hive table with more than one partition
+           columns
+        h) split.by.partition imports only subset of rows
+
+        Included fixes in the 1.0.0 release
+
+        a) Error attempting to run with HDFS job type and RCFile format
+        b) Cannot auto get values for fastload socket host and socket port
+        c) num.partitions, combined.file.num.splits, num.mappers are confusing
+           and not intuitive
+        d) Fastload job id output is not consistent
+        e) Interval, BLOB, CLOB and Binary data type gets an inconvertible data
+           type error
+
+        Included fixes in the 0.50 release
+
+        a) count(*) on table is returning numeric overflow when row count exceeds
+           INTEGER_MAX
+        b) Internal Fastload mapper times out when one mapper finishes much earlier
+           than others
+        c) Configuration parameters are in multiple classes
+        d) Use TeradataObjectArrayWritable to support different type of file
+           formats
+        e) Inconsistent naming convention for classes
+        f) CombineInputFormat's overflown block splits are non-local
+
+        Included fixes in the 0.40 - 0.45 releases
+
+        a) Staging table name contains null when query is provided to
+           TeradataInputFormat
+        b) Does not import when field count is 0
+        c) Multiple Fastload does not support fully qualified table name
+        d) Batch size is not set properly
+        e) Improved logging and error handling
+        f) Split sql is using partition in where clause, should use PI column
+        g) InputFormat key and value is reversed
+
+        Included fixes in the 0.30 - 0.32 releases
+
+        a) Null values in HDFS file cause PreparedStatement insert exception
+        b) StageTablePrefix is changed to StageTableSuffix
+        c) Writable moved to samples program
+
+        Included fixes in the 0.20 - 0.22 releases
+
+        a) Use generic Writable interface in TeradataInputFormat and
+           TeradataOutputFormat
+        b) TeradataOutputFormat supports usage in both mappers and reducers
+        c) Stage table names exceed 30-character limit of JDBC Fastload
+        d) Concurrent database insert sessions blocked each other until explicit
+           commit
+        e) Proper clean up of inserts by failed mapper/reducer task attempts
+
+    2.4 Performance Enhancements in the Release
+
+        Included performance enhancements in the 1.0.0 - 1.0.4 releases
+
+        a) With split.by.hash and split.by.value, staging is no longer required
+           with import methods
+        b) Split.by.partition no longer require staging when import source table
+           is already a PPI table.
+
+        Included performance enhancements in the 0.50 release
+
+        a) Determine how to parse objects from database metadata
+
+        Included performance enhancements in the 0.40 - 0.45 releases
+
+        a) InputFormat Split SQL query on PI instead of on partition
+        b) Add TeradataAsciiTextParser for faster parsing
+        c) Initialize Writable only once for TeradataTextWritable4FL
+
+        Included performance enhancements in the 0.30 - 0.32 releases
+
+        a) Skip staging when output method is batch.insert and target table is
+           NOPI table
+        b) Skip staging when output method is internal.fastload and target table
+           is fastloadable
+
+3.0 Requirements
+
+    3.1 System
+
+        JRE/JDK 1.6 or later versions
+
+    3.2 Supported Teradata Database versions & Hadoop versions
+
+        See SUPPORTLIST
+
+    3.3 Dependencies
+
+        1. Teradata GSS Driver  13.0 or later versions         (tdgssconfig)
+        2. Teradata JDBC Driver 14.0 or later versions         (terajdbc)
+
+4.0 Installation/Uninstallation
+
+    4.1 Dependencies
+
+        "Teradata Connector for Hadoop" is dependent on the Teradata JDBC
+        packages listed in section 3.3. These components are already included in
+        Teradata Connector for Hadoop jar file.
+             a) Teradata GSS client driver                     (tdgssconfig)
+             b) Teradata JDBC driver                           (terajdbc)
+
+        In order to run Hive and HCatalog jobs, Teradata Connector for Hadoop
+        requires Hive and HCatalog be installed in the Hadoop environment.
+        Their respective jar files and dependent jars will need to be downloaded
+        by the user if not existed, and to be passed with -libjars option to the
+        Hadoop program.
+        
+        Hive Job(version 1.2.1 as example):
+             a) antlr-runtime-3.4.jar
+             b) commons-dbcp-1.4.jar
+             c) commons-pool-1.5.4.jar
+             d) datanucleus-api-jdo-3.2.6.jar
+             e) datanucleus-core-3.2.10.jar
+             f) datanucleus-rdbms-3.2.9.jar
+             g) hive-cli-1.2.1.jar
+             h) hive-exec-1.2.1.jar
+             i) hive-jdbc-1.2.1.jar
+             i) hive-metastore-1.2.1.jar
+             j) jdo-api-3.0.1.jar
+             k) libfb303-0.9.2.jar
+             l) libthrift-0.9.2.jar
+
+        HCatalog Job:
+             a) above Hive required jar files
+             b) hive-hcatalog-core-1.2.1.jar
+        
+        Hive Job(version 0.14.0 as example):
+             a) antlr-runtime-3.4.jar
+             b) commons-dbcp-1.4.jar
+             c) commons-pool-1.5.4.jar
+             d) datanucleus-api-jdo-3.2.6.jar
+             e) datanucleus-core-3.2.10.jar
+             f) datanucleus-rdbms-3.2.9.jar
+             g) hive-cli-0.14.0.jar
+             h) hive-exec-0.14.0.jar
+             i) hive-jdbc-0.14.0.jar
+             i) hive-metastore-0.14.0.jar
+             j) jdo-api-3.0.1.jar
+             k) libfb303-0.9.0.jar
+             l) libthrift-0.9.0.jar
+
+        HCatalog Job:
+             a) above Hive required jar files
+             b) hive-hcatalog-core-0.14.0.jar
+        
+        Hive Job(version 0.13.0 as example):
+             a) antlr-runtime-3.4.jar
+             b) commons-dbcp-1.4.jar
+             c) commons-pool-1.5.4.jar
+             d) datanucleus-api-jdo-3.2.6.jar
+             e) datanucleus-core-3.2.10.jar
+             f) datanucleus-rdbms-3.2.9.jar
+             g) hive-cli-0.13.0.jar
+             h) hive-exec-0.13.0.jar
+             i) hive-metastore-0.13.0.jar
+             j) jdo-api-3.0.1.jar
+             k) libfb303-0.9.0.jar
+             l) libthrift-0.9.0.jar
+
+        HCatalog Job:
+             a) above Hive required jar files
+             b) hive-hcatalog-core-0.13.0.jar
+
+        Hive Job(version 0.11.0 as example):
+             a) antlr-runtime-3.4.jar
+             b) commons-dbcp-1.4.jar
+             c) commons-pool-1.5.4.jar
+             d) datanucleus-api-jdo-3.0.7.jar
+             e) datanucleus-core-3.0.9.jar
+             f) datanucleus-rdbms-3.0.8.jar
+             g) hive-cli-0.11.0.jar
+             h) hive-exec-0.11.0.jar
+             i) hive-metastore-0.11.0.jar
+             j) jdo2-api-2.3-ec.jar
+             k) libfb303-0.9.0.jar
+             l) libthrift-0.9.0.jar
+             m) slf4j-api-1.6.1.jar
+
+        HCatalog Job:
+             a) above Hive required jar files
+             b) hcatalog-core-0.11.0.jar
+             
+        Hive Job(version 0.9.0 as example):
+             a) antlr-runtime-3.0.1.jar
+             b) commons-dbcp-1.4.jar
+             c) commons-pool-1.5.4.jar
+             d) datanucleus-connectionpool-2.0.3.jar
+             e) datanucleus-core-2.0.3.jar
+             f) datanucleus-rdbms-2.0.3.jar
+             g) hive-cli-0.9.0.jar
+             h) hive-builtins-0.9.0.jar
+             i) hive-exec-0.9.0.jar
+             j) hive-metastore-0.9.0.jar
+             k) jdo2-api-2.3-ec.jar
+             l) libfb303-0.7.0.jar
+             m) libthrift-0.7.0.jar
+             n) slf4j-api-1.6.1.jar
+
+        HCatalog Job(version 0.4.0 as example):
+             a) above Hive required jar files
+             b) hcatalog-0.4.0.jar
+
+        In order to read and write files in the Avro format in HDFS, the
+        avro and avro-mapred jars will need to be included in the user's
+        HADOOP_CLASSPATH and -libjars jar lists. In most cases, these jars
+        can be found in the hdfs lib directory, or the hive lib directory.
+
+        Avro jar requirements:
+        Hadoop 1.0.x
+             a) avro-1.7.1.jar or later versions 
+             b) avro-mapred-1.7.1.jar or later versions
+             c) paranamer-2.3.jar
+        Hadoop 2.0
+             a) avro-1.7.3.jar or later versions
+             b) avro-mapred-1.7.3-hadoop2.jar or later versions
+             c) paranamer-2.3.jar
+             
+    4.2 Uninstallation of TDCH releases prior to 1.4.x
+    
+    	The installation instructions for previous TDCH releases had the user manually
+    	unzip and untar the TDCH jar file, and then manually copy the TDCH jar file
+    	into the /usr/lib/tdch directory. In some cases, the installation instructions
+    	also had the user copy the TDCH jar file, and other accompanying drivers, into the
+    	/usr/lib/hadoop/lib directory (or another related hadoop directory).Before installing
+    	TDCH 1.4.x using the instructions provided below, ensure that all previous TDCH 
+    	releases, and their accompanying drivers are removed from the system.
+    	
+    	1. Ensure the locate database is up-to-date by running the following command
+    	
+    		updatedb
+    	
+    	2. Find all versions of the teradata-connector jar on the system using the
+    	   following command
+    	   
+    	   	locate teradata-connector
+    	   	
+    	   If any previous versions of the teradata connector jar exist on the system,
+    	   move them into the /usr/lib/tdch/<version>/lib directory, where <version>
+    	   is 1.0/1.1/1.2/etc. If these directories don't exist, create them.
+    	   
+    	3. Find all versions of the TeraGSS driver on the system using the following 
+    	   command
+    	
+    		locate tdgssconfig
+    		
+    	   If the TeraGSS jar exists in any of the hadoop lib directories ( IE
+    	   /usr/lib/hadoop/, /usr/lib/hive/, /usr/lib/hadoop-yarn/, etc. ) remove it.
+    	   
+    	4. Find all versions of the JDBC driver on the system using the following 
+    	   command
+    	   
+    	   	locate terajdbc
+    	   	
+    	   If the JDBC jar exists in any of the hadoop lib directories ( IE
+    	   /usr/lib/hadoop/, /usr/lib/hive/, /usr/lib/hadoop-yarn/, etc. ) remove it.  
+
+    4.3 Installation of 1.4.x 
+
+        1. The Teradata Connector should be installed on a node that can submit hadoop
+           mapreduce jobs via the 'hadoop jar' command; in mosts cases TDCH should be 
+           installed on a client node in hadoop cluster
+
+        2. After moving the TDCH rpm onto the target node, install the TDCH rpm using
+           the following command. The rpm will install the TDCH jar and all other
+           relevant files into the /usr/lib/tdch/<version> directory
+           
+             rpm -ivh teradata-connector-<version>-<target distro>.noarch.rpm
+             
+        3. Setup defaults via the Teradata Connector configuration files (optional)
+
+           Copy the following files from the /usr/lib/tdch/<version/conf 
+           directory into Hadoop's conf directory, set the default
+           values in the template, and rename the files to remove ".template"
+           suffix. The parameters in the configuration file will be used as
+           default settings for Teradata Connector jobs.
+             a) teradata-export-properties.xml.template
+             b) teradata-import-properties.xml.template
+            
+        4. Install TDCH into HDFS such that Teradata DataMover and 
+           Teradata Studio can launch TDCH jobs remotely (optional)
+        
+        	Navigate to the /usr/lib/tdch/<version>/scripts directory,
+        	and run the configureOozie.sh script, providing the hostname
+        	or IP address of the node running the NameNode process, or 
+        	the ResourceManager process, as the only non-optional argument. 
+        	
+        	Hadoop 1.x:
+        	./configureOozie.sh nn=<NameNode hostname or IP address>
+        	
+        	Hadoop 2.x:
+        	./configureOozie.sh rm=<ResourceManager hostname or IP address>
+        	
+        	The configureOozie.sh script supports many more command line
+        	arguments; there are some arguments that must be specified for 
+        	high availability and Kerberos enabled clusters. Run the script
+        	without arguments for more details.
+
+    4.4 Uninstallation of TDCH 1.4.x
+
+        1. Uninstall the TDCH rpm using the following command
+        
+             rpm -e teradata-connector-<version>-<target distro>.noarch
+
+        2. If installation step 4.2.3 was completed, remove the following
+           template files and configuration files from Hadoop's conf 
+           directory
+           
+             a) teradata-export-properties.xml(.template)
+             b) teradata-import-properties.xml(.template)
+        
+        3. If installation step 4.2.4 was completed, but multiple versions
+           of TDCH exist in HDFS and only the current version of TDCH is being
+           uninstalled, remove the following folder in HDFS
+           
+             /teradata/tdch/<version>/
+             
+           If installation step 4.2.4 was completed, and all TDCH-related 
+           files need to be removed from HDFS, remove the following folder
+           in HDFS
+           
+             /teradata/
+
+    4.5 Upgrades from 1.4.x
+
+        1. Upgrades from TDCH 1.4.x are supported via the following command
+        	
+        	rpm -U teradata-connector-<version>-<target distro>.noarch.rpm
+
+    4.6 List Software Product
+
+        N/A
+
+5.0 Plugin Design
+
+    5.1 Concept
+
+        Teradata Connector for Hadoop is an extensible plugin-based architecture. 
+        A plugin implementation defines how to move data in one direction, e.g.
+        how to read data from a source or how to write data to a target.  By
+        specifying on the command-line a source plugin as input and a target
+        plugin as output, users can easily move data between systems plus
+        transformation. Besides the default set of plugins included with TDCH,
+        users can develop and extend new plugins to support new business
+        requirements and data integration needs.
+
+    5.2 Components
+
+        There are two kinds of plugins: Source plugin and Target plugin.  A
+        plugin is defined by its components.  By implementing the interfaces
+        for these components, user can define new plugins.
+
+        5.2.1 Source Plugin
+
+           1. Configuration
+
+              Configuration component gets/sets configuration parameters for the
+              plugin.
+              
+              Example:
+              com.teradata.connector.hdfs.utils.HdfsPluginConfiguration
+
+           2. InputProcessor (optional)
+
+              InputProcessor component handles job execution workflows at
+              various stages for the plugin.
+
+              Interface:
+              com.teradata.connector.common.ConnectorInputProcessor
+
+           3. InputFormat
+
+              InputFormat component defines how the plugin reads from a data
+              source.
+
+              Interface:
+              org.apache.hadoop.mapred.InputFormat
+
+           4. Deserialization
+
+              Deserialization component defines how to convert from the data
+              formats of the InputFormat to a common data format in TDCH.
+
+              Interface:
+              com.teradata.connector.common.ConnectorSerDe
+
+        5.2.2 Target Plugin
+
+           1. Configuration
+
+              Configuration component gets/sets configuration parameters for the
+              plugin.
+
+              Example:
+              com.teradata.connector.hdfs.utils.HdfsPluginConfiguration
+
+           2. OutputProcessor (optional)
+
+              OutputProcessor component handles job execution workflows at
+              various stages for the plugin.
+
+              Interface:
+              com.teradata.connector.common.ConnectorOutputProcessor
+
+           3. Converter (optional)
+
+              Converter component converts the post-processing data (as a part
+              of data transformation) to the final data values before
+              serialization.
+
+              Interface:
+              com.teradata.connector.common.converter.ConnectorConverter
+
+           4. Serialization
+
+              Serialization component defines how to convert from a common data
+              format in TDCH to the data formats of the OutputFormat.
+
+              Interface:
+              com.teradata.connector.common.ConnectorSerDe
+
+           5. OutputFormat
+
+              OutputFormat component defines how the plugin writes to a data
+              target.
+
+              Interface:
+              org.apache.hadoop.mapred.OutputFormat
+
+    5.3 Plugin Usage
+
+        5.3.1 Introduction
+
+            There are eight default plugins in TDCH:
+
+            1. Teradata Source
+            2. Teradata Target
+            3. HDFS Source
+            4. HDFS Target
+            5. Hive Source
+            6. Hive Target
+            7. HCat Source
+            8. HCat Target
+
+            A job must specify a source plugin and a target plugin, and provide
+            values to common and plugin-specific parameters.  The following
+            section describes the common and default plugins' available
+            configuration parameter settings.
+
+        5.3.2 Common
+
+             1. tdch.num.mappers
+                Description:      The number of mappers for the import/export
+                                  job. It is also the number of splits Teradata
+                                  Connector for Hadoop will attempt to create.
+                                  This parameter is used to control the degree
+                                  of parallelism employed during the TDCH job.
+                                  This value is only a recommendation to the MR
+                                  framework, and MR framework may or may not 
+                                  spawn the exact amount of mappers requested 
+                                  by the user (this is especially true for TDCH
+                                  export jobs; for more information see 
+                                  Hadoop's split generation logic).
+                Required:         no
+                Supported values: an integer greater than 0
+                Default value:    2
+                
+             2. tdch.throttle.num.mappers
+                Description:      Force the TDCH job to only use as many 
+                                  mappers as the queue associated with the job 
+                                  can handle concurrently, overwriting the user
+                                  defined nummapper value
+                Required:         no
+                Supported values: true
+                Default value:    false
+                
+             3. tdch.throttle.num.mappers.min.mappers
+                Description:      Overwrite the user defined nummapper value if
+                                  /when the queue associated with the job has
+                                  >= minmappers concurrently available. This
+                                  property is only applied when the 'tdch.
+                                  throttle.num.mappers' property is enabled.
+                Required:         no
+                Supported values: an integer greater than 0
+                Default value:    
+                
+             4. tdch.throttle.num.mappers.retry.count
+                Description:      The number of iterations TDCH will go through
+                				  before the job fails due to less than
+                				  minmappers being concurrently available for
+                				  the queue associated with the job. The
+                				  number of mappers concurrently available is
+                				  recalculated during each iteration. This
+                                  property is only applied when the 'tdch.
+                                  throttle.num.mappers' property is enabled.
+                Required:         no
+                Supported values: an integer greater than 0
+                Default value:    12
+                
+            5. tdch.throttle.num.mappers.retry.seconds
+                Description:      The amount of seconds between iterations,
+                                  where during each iteration TDCH will 
+                                  calculate the number of mappers 
+                                  concurrently available for the queue
+                                  associated with the job. This property
+                                  is only applied when the 'tdch.throttle.
+                                  num.mappers' property is enabled.
+                Required:         no
+                Supported values: an integer greater than 0
+                Default value:    5
+
+             6. tdch.num.reducers
+                Description:      The maximum number of output reducer tasks
+                                  if export is done in reduce phase.
+                Required:         no
+                Supported values: an integer greater than or equal to zero
+                Default value:    0
+
+             7. tdch.input.converter.record.schema
+             8. tdch.output.converter.record.schema
+                Description:      The type or UDF list of imported/exported
+                                  columns used to determine data conversion
+                                  functions, in comma separated format. The
+                                  number and order of items must exactly match
+                                  source/target table columns or input/output
+                                  columns. UDF functions are used to do data
+                                  type and format conversion in user-defined
+                                  ways. Please see section 7.2.1 for more
+                                  information and examples.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             9. tdch.input.date.format
+            10. tdch.input.time.format
+            11. tdch.input.timestamp.format
+                Description:      The parse pattern to apply to all input string
+                                  columns during conversion to the output column
+                                  type, where the output column type is 
+                                  determined to be a DATE/TIME/TIMESTAMP column
+                                  in the TD database. See section 7.1.3 for more
+                                  information.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+            12. tdch.output.date.format
+            13. tdch.output.time.format
+            14. tdch.output.timestamp.format
+                Description:      The format of all output string columns, when
+                                  the input column type is determined to be a
+                                  DATE/TIME/TIMESTAMP column in the TD database.
+                                  See section 7.1.3 for more information.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+            15. tdch.input.timezone.id
+            16. tdch.output.timezone.id
+                Description:      The timezone of TIME/TIMESTAMP type for
+                                  input/output columns.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+            17. tdch.output.write.phase.close
+             
+                Description:      If set to 1, the connector will discard
+                                  the import data instead of writing them to
+                                  the target. It's only for performance debug.
+                Required:         no
+                Supported values: 0|1
+                Default value:    0
+                
+            18. tdch.string.truncate
+             
+                Description:      If set to 'true', strings will be silently
+                                  truncated based on the length of the target
+                                  CHAR/VARCHAR column. If set to 'false', when
+                                  a string is larger than the target column an
+                                  exception will be thrown and the mapper will 
+                                  fail.
+                Required:         no
+                Supported values: true|false
+                Default value:    true
+
+        5.3.3 Teradata Source
+
+             1. tdch.input.teradata.jdbc.driver.class
+                Description:      JDBC driver class to use when connecting to
+                                  Teradata system for import job.
+                Required:         no
+                Supported values:  String
+                Default value:    com.teradata.jdbc.TeraDriver
+                Case sensitive:   yes
+
+             2. tdch.input.teradata.jdbc.url
+                Description:      JDBC url used to connect to Teradata system
+                                  for import job.
+                Required:         yes
+                Supported values:  String
+                Default value:    
+                Case sensitive:   yes
+
+             3. tdch.input.teradata.jdbc.user.name
+                Description:      Authentication username used to connect to
+                                  Teradata system for import job.
+                                  Note that the value can include Teradata
+                                  Wallet references in order to use
+                                  user name information from the current user's
+                                  wallet.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             4. tdch.input.teradata.jdbc.password
+                Description:      Authentication password used to connect to
+                                  Teradata system for import job.
+                                  Note that the value can include Teradata
+                                  Wallet references in order to use
+                                  password information from the current user's
+                                  wallet.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             5. tdch.input.teradata.database
+                Description:      The name of the source database in Teradata
+                                  system from which the data is imported.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             6. tdch.input.teradata.table
+                Description:      The name of the source table in Teradata
+                                  system from which the data is imported. Either
+                                  specify this or the 'tdch.input.teradata.query'
+                                  parameter but not both.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             7. tdch.input.teradata.query
+                Description:      The SQL query to select data from Teradata
+                                  database, either specify this or the
+                                  'tdch.input.teradata.table' parameter but not
+                                  both.
+                Required:         no
+                Supported values: The select SQL Teradata database supported
+                Default value:    
+                Case sensitive:   yes
+
+             8. tdch.input.teradata.conditions
+                Description:      The conditions used in SQL query to retrieve
+                                  a subset of data from source data. 
+                Required:         no
+                Supported values: The condition expression Teradata supported 
+                Default value:    
+                Case sensitive:   yes
+
+             9. tdch.input.teradata.field.names
+
+                Description:      The names of columns to import from the source
+                                  table in Teradata system. If this property is
+                                  specified via the 'sourcefieldnames' command
+                                  line argument, the value should be in comma 
+                                  separated format. If this property is 
+                                  specified directly via the '-D' option, or
+                                  any equivalent mechanism, the value should 
+                                  be in JSON format. The order of the source 
+                                  field names must match exactly the order of
+                                  the target field names for schema mapping. If
+                                  not specified, then all columns from the 
+                                  source table will be retrieved.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+            10. tdch.input.teradata.data.dictionary.use.xview
+                Description:      If set to true, the connector will use XViews
+                                  to get Teradata system information. This
+                                  option makes the user who has limited system
+                                  table access privileges can run TDCH jobs,
+                                  but the performance is not such good as using
+                                  Views.
+                Required:         no
+                Supported values: true|false
+                Default value:    false
+
+            11. tdch.input.teradata.access.lock
+                Description:      If set to true, then access lock is used to
+                                  access lock for database for concurrency. In
+                                  this case, export jobs and other operations
+                                  on the same table will not be interrupted.
+                Required:         no
+                Supported values: true|false
+                Default value:    false
+
+            12. tdch.input.teradata.query.band
+                Description:      A string, when specified, is used to set the
+                                  value of session level query band to Teradata
+                                  connection in the import job.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+            13. tdch.input.teradata.batch.size
+                Description:      The number of rows each time Teradata Connector 
+                                  for Hadoop will fetch from or send to Teradata
+                                  system, up to 1MB buffer size limit.
+                Required:         no
+                Supported values: an integer greater than 0
+                Default value:    10000
+
+            14. tdch.input.teradata.num.partitions
+                Description:      The number of partitions in the staging table
+                                  generated for split.by.partition import job.
+                                  If the number of mappers is larger than the
+                                  number of partitions in staging, the value of
+                                  number of mappers will be set to the number
+                                  of partitions in staging. 
+                Required:         no
+                Supported values: an integer greater than 0
+                Default value:    
+
+            15. tdch.input.teradata.stage.database
+                Description:      The database in Teradata system with which
+                                  Teradata Connector for Hadoop uses to create
+                                  staging table.
+                Required:         no
+                Supported values: The name of a database in Teradata system
+                Default value:    The current logon database in JDBC connection
+                Case sensitive:   no
+
+            16. tdch.input.teradata.stage.table.name
+                Description:      The name in Teradata system with which
+                                  Teradata Connector for Hadoop uses to create
+                                  staging table, if staging is required. The
+                                  staging table should not be existed in the
+                                  database.
+                Required:         no
+                Supported values: String less than 20 characters (or 118
+                                  characters in EON mode)
+                Default value:    
+                Case sensitive:   no
+
+            17. tdch.input.teradata.stage.table.forced
+                Description:      If set to true, then staging is used even if
+                                  source table is a PPI table. It is valid with
+                                  'split.by.partition' method only.
+                Required:         no
+                Supported values: true|false
+                Default value:    false
+
+            18. tdch.input.teradata.split.by.column
+                Description:      The name of a table column to be used for
+                                  splitting import tasks. It is optional with
+                                  'split.by.hash' and 'split.by.value' methods,
+                                  and not valid with 'split.by.partition' method.
+                                  If this parameter is not specified, the first
+                                  column of the table’s primary key or primary
+                                  index will be used.
+                Required:         no
+                Supported values: a valid table column name
+                Default value:    
+                Case sensitive:   no
+
+        5.3.4 Teradata Target
+
+             1. tdch.output.teradata.jdbc.driver.class
+                Description:      JDBC driver class to use when connecting to
+                                  Teradata system for export job.
+                Required:         no
+                Supported values: String
+                Default value:    com.teradata.jdbc.TeraDriver
+                Case sensitive:   yes
+
+             2. tdch.output.teradata.jdbc.url
+                Description:      JDBC url used to connect to Teradata system
+                                  for export job.
+                Required:         yes
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             3. tdch.output.teradata.jdbc.user.name
+                Description:      Authentication username used to connect to
+                                  Teradata system for export job.
+                                  Note that the value can include Teradata
+                                  Wallet references in order to use
+                                  user name information from the current user's
+                                  wallet.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             4. tdch.output.teradata.jdbc.password
+                Description:      Authentication password used to connect to
+                                  Teradata system for export job.
+                                  Note that the value can include Teradata
+                                  Wallet references in order to use
+                                  password information from the current user's
+                                  wallet.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             5. tdch.output.teradata.database
+                Description:      The name of the target database in Teradata
+                                  system from which the data is exported.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             6. tdch.output.teradata.table
+                Description:      The name of target table in Teradata system.
+                Required:         yes
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             7. tdch.output.teradata.field.count
+                Description:      The number of fields to export to the target
+                                  table in Teradata system. Either specify this
+                                  or the 'tdch.output.teradata.field.names'
+                                  parameter but not both.
+                Required:         no
+                Supported values: Integer
+                Default value:    0
+
+             8. tdch.output.teradata.field.names
+                Description:      The names of fields to export to the target
+                                  table in Teradata system. If this property is
+                                  specified via the 'targetfieldnames' command
+                                  line argument, the value should be in comma 
+                                  separated format. If this property is 
+                                  specified directly via the '-D' option, or
+                                  any equivalent mechanism, the value should 
+                                  be in JSON format. The order of the target 
+                                  field names must match the order of the 
+                                  source field names for schema mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             9. tdch.output.teradata.data.dictionary.use.xview
+                Description:      If set to true, the connector will use XViews
+                                  to get Teradata system information. This
+                                  option makes the user who has limited system
+                                  table access privileges can run TDCH jobs,
+                                  but the performance is not such good as using
+                                  Views.
+                Required:         no
+                Supported values: true|false
+                Default value:    false
+
+            10. tdch.output.teradata.query.band
+                Description:      A string, when specified, is used to set the
+                                  value of session level query band to Teradata
+                                  connection in the export job.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+            11. tdch.output.teradata.batch.size
+                Description:      The number of rows each time Teradata Connector 
+                                  for Hadoop will fetch from or send to Teradata
+                                  system, up to 1MB buffer size limit.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+            12. tdch.output.teradata.stage.database
+                Description:      The database with which Teradata Connector
+                                  for Hadoop uses to create staging tables.
+                Required:         no
+                Supported values: the name of a database in Teradata system
+                Default value:    the current logon database in JDBC
+                                  connection
+                Case sensitive:   no
+
+            13. tdch.output.teradata.stage.table.name
+                Description:      The name in Teradata system with which
+                                  Teradata Connector for Hadoop uses to create
+                                  staging table, if staging is required. The
+                                  staging table should not be existed in the
+                                  database.
+                Required:         no
+                Supported values: String less than 30 characters (or 128
+                                  characters in the DBS supprots EONs); strings
+                                  larger than DBS limit will be truncated
+                Default value:    
+                Case sensitive:   no
+
+            14. tdch.output.teradata.stage.table.forced
+                Description:      If set to true, then staging is used even if
+                                  not required.
+                Required:         no
+                Supported values: true|false
+                Default value:    false
+
+            15. tdch.output.teradata.stage.table.kept
+                Description:      If set to true, the staging table is not
+                                  dropped when the export job is failed during
+                                  inserting data from staging table to target
+                                  table. 
+                Required:         no
+                Supported values: true|false
+                Default value:    false
+
+            16. tdch.output.teradata.fastload.coordinator.socket.host
+                Description:      The job client host name or ip address that
+                                  fastload tasks communicate with to synchronize
+                                  its states. If this parameter is not specified,
+                                  Teradata Connector for Hadoop will
+                                  automatically lookup for the node that the job
+                                  is launched on, the configuration values of
+                                  the 'dfs.datanode.dns.interface' parameter or
+                                  the 'mapred.tasktracker.dns.interface'
+                                  parameter if these are configured. Otherwise,
+                                  Connector will select the IP address of the
+                                  node's first network interface.
+                Required:         no
+                Supported values: resolvable host name or IP address
+                Default value:    
+
+            17. tdch.output.teradata.fastload.coordinator.socket.port
+                Description:      The host port that fastload tasks will
+                                  communicate with to synchronize its states.
+                                  If this parameter is not specified, Teradata
+                                  Connector for Hadoop will automatically
+                                  select an available port starting from 8678.
+                Required:         no
+                Supported values: Integer
+                Default value:    
+
+            18. tdch.output.teradata.fastload.coordinator.socket.timeout
+                Description:      The timeout value for the server socket that
+                                  listens the fastload tasks connection. Its
+                                  unit is millisecond. If this parameter is not
+                                  specified, Teradata Connector for Hadoop will
+                                  set the default value.
+                Required:         no
+                Supported values: Integer
+                Default value:    480000
+                
+            19. tdch.output.teradata.fastload.coordinator.socket.backlog
+                Description:      The backlog for the server socket that
+                                  listens for fastload task connections. The 
+                                  coordinator handles one task at a time; if
+                                  the coordinator cannot keep up with the
+                                  task's incomming connections, they get 
+                                  queued in the socket's backlog. If the
+                                  number of tasks in the backlog exceeds the
+                                  backlog size undefined errors can occur.
+                Required:         no
+                Supported values: Integer
+                Default value:    256
+
+            20. tdch.output.teradata.error.table.name
+                Description:      The prefix of the name of the error table
+                                  created in internal.fastload job.
+                Required:         no
+                Supported values: String less than 24 characters (or 122
+                                  characters if the DBS supports EONs); strings
+                                  larger than DBS limits will be truncated
+                Default value:    
+                Case sensitive:   no
+                
+            21. tdch.output.teradata.error.table.database
+                Description:      The name of the database where the error
+                                  tables will be created for internal.fastload
+                                  jobs.
+                Required:         no
+                Supported values: String less than 30 characters (or 128
+                                  characters if the DBS supports EONs); strings
+                                  larger than DBS limits will be rejected
+                Default value:    
+                Case sensitive:   no
+
+            22. connector.output.teradata.error.limit
+                Description:      The maximum count of error rows for this
+                                  internal.fastload job. If the error row count
+                                  exceeds, the job will fail. There is no limit
+                                  if this value is 0.                                    
+                Required:         no
+                Supported values: Integer
+                Default value:    0
+
+        5.3.5 HDFS Source
+
+             1. tdch.input.hdfs.paths
+                Description:      The directory of to-be-exported source files
+                                  in HDFS.
+                Required:         yes
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             2. tdch.input.hdfs.field.names
+                Description:      The names of fields to export from the source
+                                  HDFS files, in comma separated format. The
+                                  order of the source field names need to match
+                                  the order of the target field names for schema
+                                  mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             3. tdch.input.hdfs.schema
+                Description:      The file content schema when using data
+                                  mapping feature with a 'hdfs' job operating
+                                  on a text file.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             4. tdch.input.hdfs.separator
+                Description:      The field separator to use with the input
+                                  files of text file format.
+                Required:         no
+                Supported values: String
+                Default value:    \t
+                Case sensitive:   yes
+
+             5. tdch.input.hdfs.line.separator
+                Description:      The line separator to use with the input files
+                                  of text file format.
+                Required:         no
+                Supported values: String
+                Default value:    \n
+                Case sensitive:   yes
+
+             6. tdch.input.hdfs.null.string
+                Description:      A string, when specified, is used to indicate
+                                  null value when it matches with the field
+                                  value. This parameter is only applied on
+                                  fields with data type related to string
+                                  (VARCHAR, CHAR, LONGVARCHAR, and CLOB). The
+                                  parameter is only valid for text files.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             7. tdch.input.hdfs.null.non.string
+                Description:      A string, when specified, is used to indicate
+                                  null value when it matches with the field
+                                  value. This parameter is only applied on
+                                  fields with data type unrelated to string
+                                  (VARCHAR, CHAR, LONGVARCHAR, and CLOB). The
+                                  parameter is only valid for text files.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             8. tdch.input.hdfs.enclosed.by
+                Description:      A character, when specified, is used to
+                                  enclose each field’s text on both end. The
+                                  parameter is only valid for text files.
+                Required:         no
+                Supported values: Character
+                Default value:    "(double quotes)
+                Case sensitive:   yes
+
+             9. tdch.input.hdfs.escaped.by
+                Description:      A character, when specified, is used to escape
+                                  all instances of the enclosed-by and the 
+                                  escaped-by characters in the fields’ text. The
+                                  parameter is only valid for text files.
+                Required:         no
+                Supported values: Character
+                Default value:    \(back slash)
+                Case sensitive:   yes
+                
+            10. tdch.input.hdfs.avro.schema
+                Description:      A string representing an inline Avro schema. The
+                				  value is used only when reading Avro files in hdfs,
+                				  and the schema will be applied to the input Avro file.
+                				  This value takes precedence over the value supplied
+                				  for tdch.input.hdfs.avro.schema.file.
+                Required:         no
+                Default value:    
+                Case sensitive:   yes
+
+            11. tdch.input.hdfs.avro.schema.file
+                Description:      The path to Avro schema file. It is used only
+                                  when Avro files are used as input. Avro schema
+                                  provided by user will be taken as schema of
+                                  generated Avro file.
+                Required:         no
+                Default value:    
+                Case sensitive:   yes
+
+        5.3.6 HDFS Target
+
+             1. tdch.output.hdfs.paths
+                Description:      The directory of output source files in HDFS.
+                Required:         yes
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             2. tdch.output.hdfs.field.names
+                Description:      The names of fields to import to the target
+                                  HDFS files, in comma separated format. The
+                                  order of the source field names need to match
+                                  the order of the target field names for schema
+                                  mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             3. tdch.output.hdfs.schema
+                Description:      The file content schema when using data
+                                  mapping feature with a 'hdfs' job operating
+                                  on a text file.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             4. tdch.output.hdfs.separator
+                Description:      The field separator to use with the output
+                                  files of text file format.
+                Required:         no
+                Supported values: String
+                Default value:    \t
+                Case sensitive:   yes
+
+             5. tdch.output.hdfs.line.separator
+                Description:      The line separator to use with the output
+                                  files of text file format.
+                Required:         no
+                Supported values: String
+                Default value:    \n
+                Case sensitive:   yes
+
+             6. tdch.output.hdfs.null.string
+                Description:      A string, when specified, is used to replace
+                                  all instances with which the field’s value is
+                                  null. This parameter is only applied on fields
+                                  with data type related to string (VARCHAR,
+                                  CHAR, LONGVARCHAR, and CLOB). The parameter
+                                  is only valid for text files.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             7. tdch.output.hdfs.null.non.string
+                Description:      A string, when specified, is used to replace
+                                  all instances with which the field’s value is
+                                  null. This parameter is only applied on fields
+                                  with data  type unrelated to string (VARCHAR,
+                                  CHAR, LONGVARCHAR, and CLOB). The parameter
+                                  is only valid for text files.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             8. tdch.output.hdfs.enclosed.by
+                Description:      A character, when specified, is used to
+                                  enclose each field’s text on both end. The
+                                  parameter is only valid for text files.
+                Required:         no
+                Supported values: Character
+                Default value:    "(double quotes)
+                Case sensitive:   yes
+
+             9. tdch.output.hdfs.escaped.by
+                Description:      A character, when specified, is used to escape
+                                  all instances of the enclosed-by and the 
+                                  escaped-by characters in the fields’ text. The
+                                  parameter is only valid for text files.
+                Required:         no
+                Supported values: Character
+                Default value:    \(back slash)
+                Case sensitive:   yes
+                
+            10. tdch.output.hdfs.avro.schema
+                Description:      A string representing an inline Avro schema. The
+                				  value is used only when writing Avro files in hdfs,
+                				  and the schema will be applied when generating the
+                				  output Avro file. This value takes precedence over 
+                				  the value supplied for tdch.output.hdfs.avro.schema.file.
+                Required:         no
+                Default value:    
+                Case sensitive:   yes
+
+            11. tdch.output.hdfs.avro.schema.file
+                Description:      The path to Avro schema file. It is used only
+                                  when Avro files are used as output. Avro
+                                  schema provided by user will be taken as
+                                  schema of generated Avro file.
+                Required:         no
+                Default value:    
+                Case sensitive:   yes
+
+        5.3.7 Hive Source
+
+             1. tdch.input.hive.conf.file
+                Description:      The path to the Hive configuration file.
+                                  It is required for a 'hive' or 'hcat' job
+                                  launched through remote execution or on data
+                                  nodes.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             2. tdch.input.hive.paths
+                Description:      The directory of to-be-exported source files
+                                  of the source table in HDFS. Either specify 
+                                  this or the 'teradata.input.hive.table'
+                                  parameter but not both.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             3. tdch.input.hive.database
+                Description:      The name of the source database in Hive from
+                                  which the data is exported.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             4. tdch.input.hive.table
+                Description:      The name of the source table in Hive from
+                                  which the data is exported. Either specify
+                                  this or the 'tdch.input.hive.paths' parameter
+                                  but not both.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             5. tdch.input.hive.field.names
+                Description:      The names of fields to export from the source
+                                  Hive tables. If this property is specified
+                                  via the 'sourcefieldnames' command line
+                                  argument, the value should be in comma 
+                                  separated format. If this property is 
+                                  specified directly via the '-D' option, or
+                                  any equivalent mechanism, the value should 
+                                  be in JSON format. The order of the source
+                                  field names need to match the order of the
+                                  target field names for schema mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no 
+
+             6. tdch.input.hive.table.schema
+                Description:      The full column schema of the source table
+                                  in Hive, not including the partition schema if
+                                  the table has any, in comma-separated format.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             7. tdch.input.hive.partition.schema
+                Description:      The full partition schema of the source table
+                                  in Hive, in comma-separated format. When this
+                                  parameter is used, the
+                                  'tdch.input.hive.table.schema' parameter must
+                                  also be specified.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             8. tdch.input.hive.null.string
+                Description:      A string, when specified, is used to indicate
+                                  null value when it matches with the field
+                                  value. For hive table, this field is applied
+                                  to all fields.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             9. tdch.input.hive.fields.separator
+                Description:      The field separator to use when text file 
+                                  format is used for source table.
+                Required:         no
+                Supported values: String
+                Default value:    \u0001
+                Case sensitive:   yes
+
+            10. tdch.input.hive.line.separator
+                Description:      The line separator to use when text file 
+                                  format is used for source table.
+                Required:         no
+                Supported values: String
+                Default value:    \n
+                Case sensitive:   yes
+
+        5.3.8 Hive Target
+
+             1. tdch.output.hive.conf.file
+                Description:      The path to the Hive configuration file.
+                                  It is required for a 'hive' or 'hcat' job
+                                  launched through remote execution or on data
+                                  nodes.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             2. tdch.output.hive.paths
+                Description:      The directory with which to place the imported
+                                  data of target Hive table. Either specify this
+                                  or the 'tdch.output.hive.table' parameter but
+                                  not both.
+                Required:         no
+                Supported values: String
+                Default value:    The value of property 'mapred.output.dir'
+                Case sensitive:   yes
+
+             3. tdch.output.hive.database
+                Description:      The name of the target database in Hive.
+                Required:         no
+                Supported values: String
+                Default value:    default
+                Case sensitive:   no
+
+             4. tdch.output.hive.table
+                Description:      The name of the target table in Hive. Either
+                                  specify this parameter or the
+                                  'tdch.output.hive.paths' parameter but not
+                                  both.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             5. tdch.output.hive.field.names
+                Description:      The names of fields to write to the target
+                                  Hive table. If this property is specified
+                                  via the 'targetfieldnames' command line
+                                  argument, the value should be in comma 
+                                  separated format. If this property is 
+                                  specified directly via the '-D' option, or
+                                  any equivalent mechanism, the value should 
+                                  be in JSON format. The
+                                  order of the target field names must match
+                                  exactly the order of the source field names
+                                  for schema mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             6. tdch.output.hive.table.schema
+                Description:      The full column schema of the source table
+                                  in Hive, not including the partition schema if
+                                  the table has any, in comma-separated format.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no 
+
+             7. tdch.output.hive.partition.schema
+                Description:      The partition schema of the target table in
+                                  Hive, in comma-separated format. The
+                                  'tdch.output.hive.table.schema' parameter must
+                                  be specified with it.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             8. tdch.output.hive.null.string
+                Description:      A string, when specified, is used to replace
+                                  all instances with which the field’s value is
+                                  null. For hive table, this field is applied
+                                  to all fields.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+             9. tdch.output.hive.fields.separator
+                Description:      The field separator to use when text file 
+                                  format is used for target table.
+                Required:         no
+                Supported values: String
+                Default value:    \u0001
+                Case sensitive:   yes
+
+            10. tdch.output.hive.line.separator
+                Description:      The line separator to use when text file 
+                                  format is used for target table.
+                Required:         no
+                Supported values: String
+                Default value:    \n
+                Case sensitive:   yes
+
+        5.3.9 HCat Source
+
+             1. tdch.input.hive.conf.file
+                see section 5.3.7.
+
+             2. tdch.input.hcat.database
+                Description:      The name of the source database in HCat from
+                                  which the data is exported.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             3. tdch.input.hcat.table
+                Description:      The name of the source table in HCat from
+                                  which the data is exported.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             4. tdch.input.hcat.field.names
+                Description:      The names of fields to export from the source
+                                  HCat tables, in comma separated format. The
+                                  order of the source field names need to match
+                                  the order of the target field names for schema
+                                  mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+        5.3.10 HCat Target
+
+             1. tdch.output.hive.conf.file
+                see section 5.3.8.
+
+             2. tdch.output.hcat.database
+                Description:      The name of the target database in HCat.
+                Required:         no
+                Supported values: String
+                Default value:    default
+                Case sensitive:   no
+
+             3. tdch.output.hcat.table
+                Description:      The name of the target table in HCat.
+                Required:         yes
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+             4. tdch.output.hcat.field.names
+                Description:      The names of fields to write to the target
+                                  HCat table, in comma separated format. The
+                                  order of the target field names must match
+                                  exactly the order of the source field names
+                                  for schema mapping.
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   no
+
+    5.4 Plugin Registration
+
+    Besides the eight default plugins shipped with Teradata Connector For Hadoop,
+    users can implement and register additional plugins to enable data transfer 
+    from/to new data systems.   
+
+        5.4.1 Plugin Configuration
+
+            To register a plugin, provide the following plugin parameters
+            for a plugin in an XML configuration file, e.g. 
+            "teradata.connector.plugins-site.xml"
+
+            1. Configuration for Source Plugin
+
+            <source>
+               <name>source plugin name</name>
+               <description>plugin description</description>
+               <configurationClass>configuration component class</configurationClass>
+               <inputformatClass>inputformat component class</inputformatClass>
+               <serdeClass>deserialization component class</serdeClass>
+               <inputProcessor>input processor component class</inputProcessor>
+            </source>
+
+            2. Configuration for Target Plugin
+
+            <target>
+               <name>target plugin name</name>
+               <description>plugin description</description>
+               <configurationClass>configuration component class</configurationClass>
+               <outputformatClass>outputformat component class</outputformatClass>
+               <serdeClass>serialization component class</serdeClass>
+               <converterClass>converter component class</serdeClass>
+               <outputProcessor>output processor component class</outputProcessor>
+            </target>
+
+        5.4.2 Plugin Parameter
+
+             1. tdch.job.plugin.configuration.file
+                Description:      The path of configuration file that used to
+                                  configure plugin parameters
+                Required:         no
+                Supported values: String
+                Default value:    
+                Case sensitive:   yes
+
+6.0 Command-Line Parameters
+
+    There are three tools shipped with Teradata Connector For Hadoop: 
+    the ConnectorImportTool, the ConnectorExportTool and ConnectorPluginTool.
+
+    The ConnectorImportTool and ConnectorExportTool classes are used for data
+    movement between Teradata and HDFS/Hive/HCat. Each class supports a set of
+    command-line arguments; the arguments are used to determine the source and
+    target plugin to use, and the values are mapped to the appropriate plugin's 
+    configuration parameters (defined in section 5.3).  
+
+    Plugin tools are used for data movement from any source to any target.  There
+    is no defined set of tool command-line parameters.  Instead, plugin-specific
+    parameters shall be passed in with -D<> option.  Please refer to section 5 for 
+    more details on plugin-specific parameters.
+
+    6.1 Teradata database connection credential
+
+        Connection credentials for Teradata database may be passed in from the
+        command line parameters to the Import/Export tools when transferring data
+        from/to a Teradata system:
+            1. -url <teradata_jdbc_url>
+            2. -username <jdbc_username>
+            3. -password <jdbc_password>
+
+        Note that <jdbc_username> and <jdbc_password> can include Teradata Wallet
+        references in order to utilize credential information from the current
+        user's wallet.  See documentation for the Teradata Wallet software
+        for more information.  At the time of this writing there is introductory
+        information about Teradata Wallet at:
+          http://developer.teradata.com/tools/articles/introducing-teradata-wallet
+
+
+    6.2 ConnectorImportTool/ConnectorExportTool common command-line parameters
+
+         1. jobtype
+            Description:      The type of import/export job. The parameter is
+                              used to automatically configure plugins by
+                              Teradata Connector for Hadoop.
+            Required:         no
+            Supported values: hcat|hive|hdfs
+            Default value:    hdfs
+            Case sensitive:   no
+
+         2. fileformat
+            Description:      The format of input/output data file in HDFS.
+                              Please refer to item 5 of section 2.1 for support
+                              value of each job type. The parameter is used to
+                              automatically configure plugins by Teradata
+                              Connector for Hadoop.
+            Required:         no
+            Supported values: orc|rcfile|sequencefile|textfile|avrofile
+            Default value:    textfile
+            Case sensitive:   no
+
+         3. method
+            Description:      The method Teradata Connector for Hadoop uses to
+                              run import/export jobs. Please refer to item 1 of
+                              section 2.1 for support value for import and
+                              export job respectively. The parameter is used to
+                              automatically configure plugins by Teradata
+                              Connector for Hadoop.
+            Required:         no
+            Supported values: split.by.hash|split.by.partition|split.by.value
+                              split.by.amp|batch.insert|internal.fastload
+            Default value:    split.by.hash(import)
+                              batch.insert(export)
+            Case sensitive:   no
+
+         4. jobclientoutput
+            Description:      The file for Teradata Connector for Hadoop to
+                              output the console log.
+            Required:         no
+            Supported values: File path string
+            Default value:     
+            Case sensitive:   yes
+
+         5. nummappers
+            Configuration:    tdch.num.mappers
+          
+         6. throttlemappers
+            Configuration:    tdch.throttle.num.mappers
+            
+         7. minmappers
+            Configuration:    tdch.throttle.num.mappers.min.mappers
+
+         8. numreducers
+            Configuration:    tdch.num.reducers
+
+         9. debugoption
+            Configuration:    tdch.output.write.phase.close
+
+        10. sourcerecordschema
+            Configuration:    tdch.intput.converter.record.schema
+
+        11. targetrecordschema
+            Configuration:    tdch.output.converter.record.schema
+
+        12. sourcedateformat
+            Configuration:    tdch.input.date.format
+
+        13. targetdateformat
+            Configuration:    tdch.output.date.format
+
+        14. sourcetimeformat
+            Configuration:    tdch.input.time.format
+
+        15. targettimeformat
+            Configuration:    tdch.output.time.format
+
+        16. sourcetimestampformat
+            Configuration:    tdch.input.timestamp.format
+
+        17. targettimestampformat
+            Configuration:    tdch.output.timestamp.format
+
+        18. sourcetimezoneid
+            Configuration:    tdch.input.timezone.id
+
+        19. targettimezoneid
+            Configuration:    tdch.output.timezone.id
+
+        20. classname
+            Configuration:    tdch.input.teradata.jdbc.driver.class (Source)
+                              tdch.output.teradata.jdbc.driver.class (Target)
+
+        21. url
+            Configuration:    tdch.input.teradata.jdbc.url (Source)
+                              tdch.output.teradata.jdbc.url (Target)
+
+        22. username
+            Configuration:    tdch.input.teradata.jdbc.user.name (Source)
+                              tdch.output.teradata.jdbc.user.name (Target)
+
+        23. password
+            Configuration:    tdch.input.teradata.jdbc.password (Source)
+                              tdch.output.teradata.jdbc.password (Target)
+
+        24. batchsize
+            Configuration:    tdch.input.teradata.batch.size (Source)
+                              tdch.output.teradata.batch.size (Target)
+
+        25. queryband
+            Configuration:    tdch.input.teradata.query.band (Source)
+                              tdch.output.teradata.query.band (Target)
+
+        26. usexviews
+            Configuration:    tdch.input.teradata.data.dictionary.use.xview (Source)
+                              tdch.output.teradata.data.dictionary.use.xview (Target)
+
+        27. separator
+            Configuration:    tdch.input.hdfs.separator (HDFS Source)
+                              tdch.output.hdfs.separator (HDFS Target)
+                              tdch.input.hive.fields.separator (Hive Source)
+                              tdch.output.hive.fields.separator (Hive Target)
+
+        28. lineseparator
+            Configuration:    tdch.input.hdfs.line.separator (HDFS Source)
+                              tdch.output.hdfs.line.separator (HDFS Target)
+                              tdch.input.hive.line.separator (Hive Source)
+                              tdch.output.hive.line.separator (Hive Target)
+
+        29. enclosedby
+            Configuration:    tdch.input.hdfs.enclosed.by (Source)
+                              tdch.output.hdfs.enclosed.by (Target)
+
+        30. escapedby
+            Configuration:    tdch.input.hdfs.escaped.by (Source)
+                              tdch.output.hdfs.escaped.by (Target)
+
+        31. nullstring
+            Configuration:    tdch.input.hdfs.null.string (HDFS Source)
+                              tdch.output.hdfs.null.string (HDFS Target)
+                              tdch.input.hive.null.string (Hive Source)
+                              tdch.output.hive.null.string (Hive Target)
+
+        32. nullnonstring
+            Configuration:    tdch.input.hdfs.null.non.string (Source)
+                              tdch.output.hdfs.null.non.string (Target)
+
+        33. avroschemafile
+            Configuration:    tdch.input.hdfs.avro.schema.file (Source)
+                              tdch.output.hdfs.avro.schema.file (Target)
+                              
+        34. avroschema
+            Configuration:    tdch.input.hdfs.avro.schema (Source)
+                              tdch.output.hdfs.avro.schema (Target)
+
+        35. hiveconf
+            Configuration:    tdch.input.hive.conf.file (Source)
+                              tdch.output.hive.conf.file (Target)
+
+        36. stringtruncate
+            Configuration:    tdch.string.truncate
+
+    6.3 ConnectorImportTool command-line parameters
+            
+         1. targetdatabase
+            Configuration:    tdch.output.hive.database (Hive)
+                              tdch.output.hcat.database (HCat)
+                              
+         2. sourcetable
+            Configuration:    tdch.input.teradata.table (Teradata)
+                              
+         3. targettable
+            Configuration:    tdch.output.hive.table (Hive)
+                              tdch.output.hcat.table (HCat)
+
+         4. targetpaths
+            Configuration:    tdch.output.hdfs.paths (HDFS)
+                              tdch.output.hive.paths (Hive)
+
+         5. targettableschema
+            Configuration:    tdch.output.hdfs.schema (HDFS)
+                              tdch.output.hive.table.schema (Hive)
+
+         6. targetpartitionschema
+            Configuration:    tdch.output.hive.partition.schema
+
+         7. sourcefieldnames
+            Configuration:    tdch.input.teradata.field.names (Teradata)
+                              
+         8. targetfieldnames
+            Configuration:    tdch.input.hdfs.field.names (HDFS)
+                              tdch.input.hive.field.names (Hive)
+                              tdch.input.hcat.field.names (HCat)
+
+         9. sourcequery
+            Configuration:    tdch.input.teradata.query
+
+        10. sourceconditions
+            Configuration:    tdch.input.teradata.conditions
+
+        11. splitbycolumn
+            Configuration:    tdch.input.teradata.split.by.column
+
+        12. forcestage
+            Configuration:    tdch.input.teradata.stage.table.forced
+
+        13. stagedatabase
+            Configuration:    tdch.input.teradata.stage.database
+
+        14. stagetablename
+            Configuration:    tdch.input.teradata.stage.table.name
+
+        15. accesslock
+            Configuration:    tdch.input.teradata.access.lock
+
+        16. numpartitionsinstaging
+            Configuration:    tdch.input.teradata.num.partitions
+
+    6.4 ConnectorExportTool command-line parameters
+
+         1. targetdatabase
+            Configuration:    tdch.output.teradata.database (Teradata)
+            
+         2. sourcedatabase
+            Configuration:    tdch.input.hive.database (Hive)
+                              tdch.input.hcat.database (HCat)
+
+         3. targettable
+            Configuration:    tdch.output.teradata.table (Teradata)
+                              
+         4. sourcetable       tdch.input.hive.table (Hive)
+            Configuration:    tdch.input.hcat.table (HCat)
+
+         5. sourcepaths
+            Configuration:    tdch.input.hdfs.paths (HDFS)
+                              tdch.input.hive.paths (Hive)
+
+         6. sourcetableschema
+            Configuration:    tdch.input.hdfs.schema (HDFS)
+                              tdch.input.hive.table.schema (Hive)
+
+         7. sourcepartitionschema
+            Configuration:    tdch.input.hive.partition.schema
+
+         8. targetfieldnames
+            Configuration:    tdch.output.teradata.field.names
+                              
+         9. sourcefieldnames  
+            Configuration:    tdch.output.hdfs.field.names (HDFS)
+                              tdch.output.hive.field.names (Hive)
+                              tdch.output.hcat.field.names (HCat)
+
+        10. forcestage
+            Configuration:    tdch.output.teradata.stage.table.forced
+
+        11. keepstagetable
+            Configuration:    tdch.output.teradata.stage.table.kept
+
+        12. stagedatabase
+            Configuration:    tdch.output.teradata.stage.databse
+
+        13. stagetablename
+            Configuration:    tdch.output.teradata.stage.table.name
+
+        14. fastloadsockethost
+            Configuration:    tdch.output.teradata.fastload.socket.host
+
+        15. fastloadsocketport
+            Configuration:    tdch.output.teradata.fastload.socket.port
+
+        16. fastloadsockettimeout
+            Configuration:    tdch.output.teradata.fastload.socket.timeout
+
+        17. errortablename
+            Configuration:    tdch.output.teradata.error.table.name
+            
+        18. errortabledatabase
+            Configuration:    tdch.output.teradata.error.table.database
+
+        19. errorlimit
+            Configuration:    connector.output.teradata.error.limit
+
+    6.5 Plugin command-line parameters
+
+         1. pluginconf
+            Configuration:    tdch.job.plugin.configuration.file
+
+         2. sourceplugin
+            Description:      The name of source plugin that specified in plugin
+                              configuration file.
+            Required:         yes
+            Supported values: String
+            Default value:    
+            Case sensitive:   no
+
+         3. targetplugin
+            Description:      The name of target plugin that specified in plugin
+                              configuration file.
+            Required:         yes
+            Supported values: String
+            Default value:    
+            Case sensitive:   no
+
+         4. nummappers
+            Configuration:    tdch.num.mappers
+
+         5. sourcerecordschema
+            Configuration:    tdch.intput.converter.record.schema
+
+         6. targetrecordschema
+            Configuration:    tdch.output.converter.record.schema
+
+    6.6 Plugin Parameters Usage
+
+        For plugin tool, or other remote execution, configuration parameters
+        can't be passed through command-line parameters. In such case, they
+        should be set through -D option in command line, like following:
+
+            hadoop jar $TDCH_JAR -D<parameter>=<value> ...
+
+        Please refer to section 7.2 for examples.
+
+7.0 Basic Usage
+
+    The following sample commands will make use of the following Teradata
+    table setup DDL:
+
+        CREATE MULTISET TABLE sales_transaction (
+            tran_id INTEGER,
+            tran_date DATE,
+            customer VARCHAR(100),
+            amount DECIMAL(18,2)
+        );
+
+    The following sample commands will be used for export jobs only:
+
+        echo "1,2012-11-01,acme,630.00" > /tmp/stfile
+        echo "2,2012-12-01,emca,760.21" >> /tmp/stfile
+
+    7.1 Basic Usage
+
+        7.1.1 Data movement
+
+            7.1.1.1 Data movement between Teradata and HDFS
+
+            1. The following sample commands demonstrate how to import all four
+               columns from the 'sales_transaction' table in Teradata system to
+               an HDFS text file:
+               (replace "mapred" with your own hadoop user in the following
+               commands, and make sure that the user has permission to HDFS)
+
+               su mapred
+
+               hadoop fs -rmr /user/mapred/sales_transaction
+
+               export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorImportTool
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hdfs
+                 -fileformat textfile
+                 -method split.by.hash
+                 -separator ","
+                 -sourcetable sales_transaction
+                 -targetpaths /user/mapred/sales_transaction
+
+               The above commands illustrate that the job type is 'hdfs' and all
+               four columns of a 'sales_transaction' table from Teradata system
+               are imported using the 'split.by.hash' method.
+
+               The target directory in HDFS is /user/mapred/sales_transaction.
+               The storage file format is 'textfile'. The fields are separated
+               by comma.
+
+            2. The following sample commands demonstrate how to export fields
+               stored in path of '/user/mapred/sales_transaction' in HDFS to
+               the 'sales_transaction' table in Teradata system:
+
+               su mapred
+
+               hadoop fs -rmr /user/mapred/sales_transaction
+               hadoop fs -mkdir /user/mapred/sales_transaction
+               hadoop fs -put /tmp/stfile /user/mapred/sales_transaction/
+
+               export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorExportTool
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password "$tdwallet(my_pwd)"
+                 -jobtype hdfs
+                 -fileformat textfile
+                 -method batch.insert
+                 -separator ","
+                 -sourcepaths /user/mapred/sales_transaction
+                 -targettable sales_transaction
+
+               The above commands illustrate that the job type is 'hdfs', and
+               all four fields from '/user/mapred/sales_transaction' are
+               exported to a 'sales_transaction' table in Teradata system using
+               the 'batch.insert' method. The storage format of the files is
+               'textfile' and field separator is comma.  The password used
+               to connect to the Teradata system is the value of the item
+               named 'my_pwd' from the current user's wallet.
+
+            7.1.1.2 Data transfer between Teradata and Hive
+
+            The following commands will be used for Hive Jobs.
+
+            export HADOOP_HOME=/usr/lib/hadoop
+            export HIVE_HOME=/usr/lib/hive
+            export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+			NOTE: This example uses jars associated with Hive 0.9; these env
+			vars should be updated according to the Hive and HCatalog versions
+			found in your environment; see section 4.1
+			
+            export HADOOP_CLASSPATH=$HIVE_HOME/conf:
+                           $HIVE_HOME/lib/antlr-runtime-3.0.1.jar:
+                           $HIVE_HOME/lib/commons-dbcp-1.4.jar:
+                           $HIVE_HOME/lib/commons-pool-1.5.4.jar:
+                           $HIVE_HOME/lib/datanucleus-connectionpool-2.0.3.jar:
+                           $HIVE_HOME/lib/datanucleus-core-2.0.3.jar:
+                           $HIVE_HOME/lib/datanucleus-rdbms-2.0.3.jar:
+                           $HIVE_HOME/lib/hive-builtins-0.9.0.jar:
+                           $HIVE_HOME/lib/hive-cli-0.9.0.jar:
+                           $HIVE_HOME/lib/hive-exec-0.9.0.jar:
+                           $HIVE_HOME/lib/hive-metastore-0.9.0.jar:
+                           $HIVE_HOME/lib/jdo2-api-2.3-ec.jar:
+                           $HIVE_HOME/lib/libfb303-0.7.0.jar:
+                           $HIVE_HOME/lib/libthrift-0.7.0.jar:
+                           $HIVE_HOME/lib/mysql-connector-java-5.1.17-bin.jar:
+                           $HIVE_HOME/lib/slf4j-api-1.6.1.jar
+
+            export LIB_JARS=$HIVE_HOME/lib/hive-builtins-0.9.0.jar,
+                           $HIVE_HOME/lib/hive-cli-0.9.0.jar,
+                           $HIVE_HOME/lib/hive-exec-0.9.0.jar,
+                           $HIVE_HOME/lib/hive-metastore-0.9.0.jar,
+                           $HIVE_HOME/lib/libfb303-0.7.0.jar,
+                           $HIVE_HOME/lib/libthrift-0.7.0.jar,
+                           $HIVE_HOME/lib/jdo2-api-2.3-ec.jar,
+                           $HIVE_HOME/lib/slf4j-api-1.6.1.jar
+
+            1. This following sample commands demonstrate how to import all four
+               columns from a 'sales_transaction' table in Teradata system to
+               Hive, store the Hive-compatible file contents in a non-partitioned
+               directory, but not create a Hive table at the end of import:
+               (replace "hive" with your own hadoop/hive user in the following
+               commands, and make sure that the user has permission to HDFS)
+
+               su hive
+
+               hadoop fs -rmr /user/hive/warehouse/sales_transaction
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorImportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hive
+                 -fileformat rcfile
+                 -method split.by.hash
+                 -sourcetable sales_transaction
+                 -targetpaths /user/hive/warehouse/sales_transaction
+                 -targettableschema "tran_id int,tran_date string,customer string,
+                                     amount float"
+
+               The above commands illustrate that the job type is 'hive', and
+               all four columns of a 'sales_transaction' table from Teradata
+               system is imported using the 'split.by.hash' method.
+
+               'tran_date' column will be converted from DATE in Teradata to
+               string in Hive, and 'amount' will be converted from DECIMAL(n,m)
+               in Teradata to float in Hive.
+
+               The target Hive directory is '/user/hive/warehouse/sales_transaction'.
+               Files under this directory has four fields. The storage file
+               format is 'rcfile'.
+
+            2. This following sample commands demonstrate how to import three
+               columns from a 'sales_transaction' table in Teradata system to Hive
+               and create a non-partitioned table in Hive at the end of import:
+
+               su hive
+
+               hive -e "drop table sales_transaction;"
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorImportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hive
+                 -fileformat rcfile
+                 -method split.by.value
+                 -sourcetable sales_transaction
+                 -sourcefieldnames "tran_date,customer,amount"
+                 -targettable sales_transaction
+                 -targettableschema "tran_date string,customer string,amount float"
+                 -targetfieldnames "tran_date,customer,amount"
+
+               The above commands illustrate that the job type is 'hive', and
+               three columns (tran_date, customer, amount) from a 'sales_transaction'
+               table are imported from Teradata system using the 'split.by.value'
+               method.
+
+               The to-be-created Hive table name is also 'sales_transaction'.
+               When '-targettable' is specified and the table does not exist,
+               Teradata Connector for Hadoop will create a non-partitioned table
+               with three fields. The storage file format of Hive table is 'rcfile'.
+
+            3. This following sample commands demonstrate how to import three
+               columns from a 'sales_transaction' table in Teradata system and add
+               partitions to an existing Hive partitioned table:
+
+               su hive
+
+               hive -e "drop table sales_transaction;"
+               hive -e "create table sales_transaction(tran_date string,amount float)
+                        partitioned by (customer string) stored as rcfile;"
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorImportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hive
+                 -fileformat rcfile
+                 -method split.by.partition
+                 -sourcetable sales_transaction
+                 -sourcefieldnames "tran_date,customer,amount"
+                 -targettable sales_transaction
+                 -targetfieldnames "tran_date,customer,amount"
+
+               The above commands illustrate that the job type is 'hive', and
+               three columns (tran_date, customer, amount) from a 'sales_transaction'
+               table are imported using the 'split.by.partition' method.
+
+               The Hive table name is also 'sales_transaction'. It is an
+               existing partitioned table with 'customer' as the partition
+               column. Teradata Connector for Hadoop will create partitions
+               based on the 'customer' column values from the table in Teradata
+               system. The storage format is 'rcfile'.
+
+            4. The following sample commands demonstrate how to export data from
+               a Hive non-partitioned table to the 'sales_transaction' table in
+               Teradata system:
+
+               su hive
+
+               hive -e "drop table sales_transaction;"
+               hive -e "create table sales_transaction(tran_id int,
+                       tran_date string, customer string,amount float)
+                       row format delimited fields terminated by ','
+                       stored as textfile;"
+               hive -e "load data local inpath '/tmp/stfile' into table
+                       sales_transaction
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorExportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hive
+                 -fileformat textfile
+                 -method internal.fastload
+                 -fastloadsockethost 153.64.28.7
+                 -fastloadsocketport 8678
+                 -separator ","
+                 -sourcedatabase default
+                 -sourcetable sales_transaction
+                 -sourcefieldnames "tran_id,customer,amount"
+                 -targettable sales_transaction
+                 -targetfieldnames "tran_id,customer,amount"
+
+               The above commands illustrate that the job type is 'hive', and
+               three columns (tran_id, customer, amount) from a 'sales_transaction'
+               table in Hive is exported to Teradata system using the
+               'internal.fastload' method. The IP address of the job launch node
+               is 153.64.28.7. The port via which Fastload tasks will communicate
+               to is 8678. The Hive table's storage format is 'rcfile'.
+
+               The name of target table in Teradata system is 'sales_transaction'.
+               The to-be-exported data will populate its 3 columns: tran_id,
+               customer, and amount, which means the 'tran_date' column in the
+               target table will contain null value after the export.
+
+            5. The following sample commands demonstrate how to export data from
+               a Hive partitioned table to the 'sales_transaction' table in
+               Teradata system:
+
+               su hive
+
+               hive -e "drop table sales_transaction_p;"
+               hive -e "create table sales_transaction_p(tran_id int,
+                       tran_date string,amount float) partitioned by
+                       (customer string) stored as rcfile;"
+               hive -e "insert into table sales_transaction_p partition (customer)
+                      select tran_id, tran_date,amount,customer from
+                      sales_transaction;"
+                    -hiveconf hive.exec.dynamic.partition.mode=nonstrict
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorExportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hive
+                 -fileformat rcfile
+                 -method internal.fastload
+                 -fastloadsockethost 153.64.28.7
+                 -fastloadsocketport 8678
+                 -sourcetable sales_transaction_p
+                 -sourcefieldnames "tran_id,customer,amount"
+                 -targettable sales_transaction
+                 -targetfieldnames "tran_id,customer,amount"
+
+               The above commands illustrate that the job type is 'hive', and
+               three columns from a 'sales_transaction_p' table in Hive are
+               exported to Teradata system using 'internal.fastload' method. The
+               IP address of the job launch node is 153.64.28.7. The port via
+               which Fastload tasks will communicate is 8678. The Hive table's
+               storage format is 'rcfile'.
+
+               The name of target table in Teradata system is 'sales_transaction'.
+               The to-be-exported data will populate its three columns: tran_id,
+               customer, and amount, which means the 'tran_date' column in the
+               target table will contain null value after the export.
+
+            7.1.1.3 Data transfer between Teradata and HCatalog
+
+            The following commands will be used for HCatalog jobs.
+
+            export HADOOP_HOME=/usr/lib/hadoop
+            export HIVE_HOME=/usr/lib/hive
+            export HCAT_HOME=/usr/lib/hcatalog
+            export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+            
+            NOTE: This example uses jars associated with Hive 0.9; these env
+			vars should be updated according to the Hive and HCatalog versions
+			found in your environment; see section 4.1
+
+            export HADOOP_CLASSPATH=$HCAT_HOME/share/hcatalog/hcatalog-0.4.0.jar:
+                           $HIVE_HOME/conf:
+                           $HIVE_HOME/lib/antlr-runtime-3.0.1.jar:
+                           $HIVE_HOME/lib/commons-dbcp-1.4.jar:
+                           $HIVE_HOME/lib/commons-pool-1.5.4.jar:
+                           $HIVE_HOME/lib/datanucleus-connectionpool-2.0.3.jar:
+                           $HIVE_HOME/lib/datanucleus-core-2.0.3.jar:
+                           $HIVE_HOME/lib/datanucleus-rdbms-2.0.3.jar:
+                           $HIVE_HOME/lib/hive-builtins-0.9.0.jar:
+                           $HIVE_HOME/lib/hive-cli-0.9.0.jar:
+                           $HIVE_HOME/lib/hive-exec-0.9.0.jar:
+                           $HIVE_HOME/lib/hive-metastore-0.9.0.jar:
+                           $HIVE_HOME/lib/jdo2-api-2.3-ec.jar:
+                           $HIVE_HOME/lib/libfb303-0.7.0.jar:
+                           $HIVE_HOME/lib/libthrift-0.7.0.jar:
+                           $HIVE_HOME/lib/mysql-connector-java-5.1.17-bin.jar:
+                           $HIVE_HOME/lib/slf4j-api-1.6.1.jar
+
+            export LIB_JARS=$HCAT_HOME/share/hcatalog/hcatalog-0.4.0.jar,
+                           $HIVE_HOME/lib/hive-builtins-0.9.0.jar,
+                           $HIVE_HOME/lib/hive-cli-0.9.0.jar,
+                           $HIVE_HOME/lib/hive-exec-0.9.0.jar,
+                           $HIVE_HOME/lib/hive-metastore-0.9.0.jar,
+                           $HIVE_HOME/lib/libfb303-0.7.0.jar,
+                           $HIVE_HOME/lib/libthrift-0.7.0.jar,
+                           $HIVE_HOME/lib/jdo2-api-2.3-ec.jar,
+                           $HIVE_HOME/lib/slf4j-api-1.6.1.jar
+
+            1. The following sample commands demonstrate how to import three
+               columns from the 'sales_transaction' table in Teradata system to
+               a Hive table through HCatalog:
+
+               su hive
+
+               hive -e "drop table sales_transaction;"
+               hive -e "create table sales_transaction(tran_date string,
+                      customer string,amount float) stored as rcfile;"
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorImportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hcat
+                 -fileformat rcfile
+                 -method split.by.amp
+                 -sourcetable sales_transaction
+                 -sourcefieldnames "tran_date,customer,amount"
+                 -targetdatabase default
+                 -targettable sales_transaction
+                 -targetfieldnames "tran_date,customer,amount"
+
+               The above commands illustrate that the job type is 'hcat', and
+               three columns (tran_date, customer, amount) from a
+               'sales_transaction' table are imported using the 'split.by.amp'
+               method.
+
+               The HCatalog table name is also 'sales_transaction' and database
+               is 'default'. Teradata Connector for Hadoop automatically
+               retrieves its table schema. With a 'hcat' job, the table must
+               exist prior to using Teradata Connector for Hadoop. The storage
+               file format is 'rcfile'.
+
+            2. The following sample commands demonstrate how to export data from
+               Hive to to a 'sales_transaction' table in Teradata system through
+               HCatalog:
+
+               su hive
+
+               hive -e "drop table sales_transaction;"
+               hive -e "create table sales_transaction(tran_id int,
+                       tran_date string, customer string,amount float)
+                       row format delimited fields terminated by ','
+                       stored as textfile;"
+               hive -e "load data local inpath '/tmp/stfile' into table
+                       sales_transaction;"
+
+               hadoop jar $TDCH_JAR
+                 com.teradata.connector.common.tool.ConnectorExportTool
+                 -libjars $LIB_JARS
+                 -classname com.teradata.jdbc.TeraDriver
+                 -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+                 -username sampleuser
+                 -password samplepwd
+                 -jobtype hcat
+                 -fileformat textfile
+                 -method internal.fastload
+                 -sourcedatabase default
+                 -sourcetable sales_transaction
+                 -targettable sales_transaction
+
+               The above commands illustrate that the job type is 'hcat', and
+               all four columns from a 'sales_transaction' table in Hive are
+               exported to Teradata system using the 'internal.fastload' method.
+               Teradata Connector for Hadoop retrieves automatically table
+               schema through HCatalog.
+
+               The name of target table in Teradata system is 'sales_transaction'.
+
+        7.1.2 Schema Mapping and Basic Data Type Conversions
+
+        The Teradata Connector for Hadoop supports bi-directional schema mapping
+        from source to target with any specified sequence and valid data
+        conversion between data types.
+
+        1. The following sample command demonstrates how to import subset of
+           fields from a 'sales_transaction' table in Teradata system to a Hive
+           table:
+
+             su hive
+
+             hive -e "drop table sales_transaction;"
+             hive -e "create table sales_transaction(tran_id int,
+                     tran_date string, customer string,amount string)
+                     stored as rcfile;"
+
+             export HADOOP_HOME=/usr/lib/hadoop
+             export HIVE_HOME=/usr/lib/hive
+             export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+             hadoop jar $TDCH_JAR
+               com.teradata.connector.common.tool.ConnectorImportTool
+               -libjars $LIB_JARS
+               -classname com.teradata.jdbc.TeraDriver
+               -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+               -username sampleuser
+               -password samplepwd
+               -jobtype hive
+               -fileformat rcfile
+               -method split.by.hash
+               -sourcetable sales_transaction
+               -sourcefieldnames "amount,customer"
+               -targettable sales_transaction
+               -targetfieldnames "amount,customer"
+
+           The above commands illustrate that the job type is 'hive', and two
+           columns (amount, customer) from a four-column 'sales_transaction'
+           table in Teradata system are imported using the 'split.by.hash'
+           method. In addition, the data type of the 'amount' column is
+           DECIMAL(18,2).
+
+           The target table name in Hive is 'sales_transaction'. It has four
+           columns:
+           tran_id, tran_date, customer, and amount. For the purpose of this 
+           sample, the 'amount' column is defined to have the data type of
+           string.
+
+           After import with schema mapping and data type conversion, in the
+           Hive table only two fields will have non-null values: amount and
+           customer. In addition, amount is converted from decimal to string
+           after import.
+
+        2. The following sample commands demonstrate how to export data from
+           a Hive non-partitioned table to Teradata system:
+
+             su hive
+
+             hive -e "drop table sales_transaction;"
+             hive -e "create table sales_transaction(tran_id int,
+                     tran_date string, customer string,amount float)
+                     row format delimited fields terminated by ','
+                     stored as textfile;"
+             hive -e "load data local inpath '/tmp/stfile' into table
+                     sales_transaction;"
+
+             hadoop jar $TDCH_JAR
+               com.teradata.connector.common.tool.ConnectorExportTool
+               -libjars $LIB_JARS
+               -classname com.teradata.jdbc.TeraDriver
+               -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+               -username sampleuser
+               -password samplepwd
+               -jobtype hive
+               -fileformat textfile
+               -separator ","
+               -method batch.insert
+               -sourcetable sales_transaction
+               -sourcefieldnames "tran_id,customer,tran_date"
+               -targettable sales_transaction
+               -targetfieldnames "tran_id,customer,tran_date"
+
+           The above command illustrates that the job type is 'hive', and three 
+           columns (tran_id, customer, tran_date) from a 'sales_transaction'
+           table in Hive are exported to Teradata system using the 'batch.insert'
+           method.
+
+           The name of target table in Teradata system is 'sales_transaction'.
+           The to-be-exported data will populate its three columns: tran_id,
+           customer, tran_date, which means the other columns in this table
+           will be null. In addition, 'tran_date' column is a DATE in Teradata
+           system. Teradata Connector for Hadoop will automatically do the
+           schema mapping and data conversion.
+           
+        7.1.3 DateTime Type Conversions
+        
+        In the scenario that one or more of the columns of the source data
+        are stored in a string-based format (string, varchar, char, clob, etc.),
+        and the target columns are of DateTime type (date, time, time with
+        with timezone, timestamp, timestamp with timezone, etc.), TDCH will
+        attempt to parse the source data using the following default DateTime
+        formatting strings:
+        
+         a) For date columns, "yyyy-MM-dd" is used to parse the source string
+         b) For time and time with time zone columns, "HH:mm:ss" is used to 
+            parse the source string
+         c) For timestamp and timestamp with time zone columns, 
+            "yyyy-MM-dd HH:mm:ss.SSS" is used to parse the source string
+        
+        When one or more of the columns of source data are stored in a string-
+        based format that doesn't adhere to the default formatting strings
+        defined above, TDCH users can override these formatting strings via 
+        the following command line paramaters and their associated configuration
+        properties:
+        
+          a) For date columns, -sourcedateformat or tdch.input.date.format
+          b) For time columns, -sourcetimeformat or tdch.input.time.format
+          c) For timestamp columns, -sourcetimestampformat or
+             tdch.input.timestamp.format
+             
+        The user-defined values supplied for the above properties should
+        utilize the set of formatting characters supported by Java's
+        SimpleDateFormat class.
+        
+        In the scenario that one or more of the columns of the source data are
+        of DateTime type, and the target columns are string-based, TDCH will
+        convert the DateTime data to string values using the following default
+        DateTime formatting strings:
+        
+          a) For date columns, "yyyy-MM-dd" is the format of the target string
+          b) For time and time with time zone columns, "HH:mm:ss" is the format
+             of the target string
+          c) For timestamp columns, "yyyy-MM-dd HH:mm:ss.SSS" is the format of
+             the target string
+          d) For timestamp with time zone columns, "yyyy-MM-dd HH:mm:ss.SSSZ"
+             is the format of the target strings
+             
+        TDCH users can override these default output string formats using the 
+        following command line parameters and their associated configuration 
+        properties:
+        
+          a) For date columns, -targetdateformat or tdch.output.date.format
+          b) For time columns, -targettimeformat or tdch.output.time.format
+          c) For timestamp columns, -targettimestampformat or
+             tdch.output.timestamp.format
+             
+        It is important to note that the default and user-defined formatting
+        strings described above with be applied to all string columns which
+        will be converted to DateTime targets, and all DateTime columns which
+        will be converted to string targets. See section 7.2.1 for more
+        information on applying distinct formatting strings to indiidual 
+        columns, usage examples, and handling multiple input formats per column.
+             
+        In addition to converting strings to and from DateTime formats based on
+        default and user define formatting strings, TDCH also supports 
+        conversions based on source and target timezone IDs. The following 
+        command line parameters and their associated configuration properties 
+        can be used to set the source and target timezone IDs; when left
+        unspecified no timezone conversions will occur:
+        
+          a) To define a source time zone ID, use -sourcetimezoneid or
+             tdch.input.timezone.id
+          b) To define a target time zone ID, use -targettimezoneid or
+             tdch.target.timezone.id
+
+    7.2 Advanced Usage
+
+        7.2.1 Advanced DateTime Type Conversions
+
+           The following specialized data converters provide users with the
+           ability to convert from various source data types to various target
+           data types using user defined formatting strings and user defined
+           source and target timezone IDs. These specialized converters are
+           packaged with TDCH 1.4 by default.
+
+            a) StringFMTTZToDateTZ(inputFormat, sourceTimezoneId, targetTimezoneId)
+            b) StringFMTTZToTimeTZ(inputFormat, sourceTimezoneId, targetTimezoneId)
+            c) StringFMTTZToTimestampTZ(inputFormat, sourceTimezoneId, targetTimezoneId)
+            d) StringFMTTZToCalendar(inputFormat, sourceTimezoneId, targetTimezoneId)
+            e) DateToStringFMT(outputformat)
+            f) TimeTZToStringFMTTZ(outputFormat, sourceTimezoneId, targetTimezoneId)
+            g) TimeTZToLongTZ(sourceTimezoneId, targetTimezoneId)
+            h) TimeTZToTimeTZ(sourceTimezoneId, targetTimezoneId)
+            i) TimeTZToCalendar(sourceTimezoneId, targetTimezoneId)
+            j) TimestampTZToStringFMTTZ(sourceTimezoneId, targetTimezoneId, outputFormat)
+            k) TimestampTZToDateTZ(sourceTimezoneId, targetTimezoneId)
+            l) TimestampTZToTimeTZ(sourceTimezoneId, targetTimezoneId)
+            m) TimestampTZToTimestampTZ(sourceTimezoneId, targetTimezoneId)
+            n) TimestampTZToCalendar(sourceTimezoneId, targetTimezoneId)
+            o) TimestampTZToLongTZ(sourceTimezoneId, targetTimezoneId)
+            p) CalendarToTimeTZ(targetTimezoneId)
+            q) CalendarToTimestampTZ(targetTimezoneId)
+            r) CalendarToDateTZ(targetTimezoneId)
+            s) CalendarToLongTZ(targetTimezoneId)
+            t) CalendarToStringFMTTZ(targetTimezoneId, outputformat)
+            u) LongTZToTimeTZ(sourceTimezoneId, targetTimezoneId)
+            v) LongTZToTimestampTZ(sourceTimezoneId, targetTimezoneId)
+            w) LongTZToCalendar(sourceTimezoneId, targetTimezoneId)
+
+           These conversion routines can be run against columns in the source
+           data by specifying the desired converter in the string supplied to
+           the –sourcerecordschema argument. The following sample commands
+           demonstrate how to import all four columns from the
+           'sales_transaction' table in a Teradata system to a HDFS text file,
+           and convert column "tran_date" to format "YY/MM/dd" using the
+           'DateToStringFMT' converter. 
+
+             su mapred
+
+             hadoop fs -rmr /user/mapred/sales_transaction
+
+             export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+             hadoop jar $TDCH_JAR
+               com.teradata.connector.common.tool.ConnectorImportTool
+               -Dconvert.datatype.format="YY/MM/dd"
+               -classname com.teradata.jdbc.TeraDriver
+               -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+               -username sampleuser
+               -password samplepwd
+               -jobtype hdfs
+               -fileformat textfile
+               -method split.by.hash
+               -separator ","
+               -sourcetable sales_transaction
+               -sourcerecordschema "int, DateToStringFMT(convert.datatype.format),
+                                    string, float"
+               -targetpaths /user/mapred/sales_transaction
+
+           The above commands illustrate that the job type is 'hdfs' and all
+           four columns of a 'sales_transaction' table from Teradata system is
+           imported using the 'split.by.hash' method.
+
+           The target directory in HDFS is /user/mapred/sales_transaction. The 
+           storage file format is 'textfile'. The fields are separated by comma,
+           and the second column is in the format of "YY/MM/dd".
+
+           The specification of any of the following command line parameters
+           causes TDCH to apply one or more of the specialized converters above
+           to the source columns, where the converter is selected based on the
+           data type of the source and target column schema.
+
+               a) sourcedateformat
+               b) sourcetimeformat
+               c) sourcetimestampformat
+               d) targetdateformat
+               e) targettimeformat
+               f) targettimestampformat
+               g) sourcetimezoneid
+               i) targettimezoneid
+
+           For example, the example above could be modified to use the
+           –targetdateformat parameter, rather than specifying the converter
+           explicitly in the value supplied to –sourcerecordschema, shown in the
+           following sample commands.
+
+             su mapred
+
+             hadoop fs -rmr /user/mapred/sales_transaction
+
+             export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+             hadoop jar $TDCH_JAR
+               com.teradata.connector.common.tool.ConnectorImportTool
+               -classname com.teradata.jdbc.TeraDriver
+               -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+               -username sampleuser
+               -password samplepwd
+               -jobtype hdfs
+               -fileformat textfile
+               -method split.by.hash
+               -separator ","
+               -sourcetable sales_transaction
+               -targetdateformat YY/MM/dd
+               -targetpaths /user/mapred/sales_transaction       
+
+           TDCH would apply the DateToStringFMT conversion routine to the above
+           commands, along with the user-defined output format, to all DATE
+           columns in the source data.
+           
+           The above examples deal mainly with conversions from DateTime types
+           to string-based formats in Hadoop. In many cases, users will want to
+           load string-based data into DateType columns in a Teradata database.
+           In some situations, the source string data will be stored in multiple
+           similar formats, and the previously described conversion routines
+           will fail to parse all of the incomming data. For example, given the
+           following Teradata table definition, and the source records in an
+           HDFS file, TDCH would fail to load the data due to the mismatched
+           timestamp formats:
+           
+           Teradata Table Definition:
+              create table timestamp_example(col1 int, col2 timestamp(3));
+              
+           Contents of the 'timestampdata.txt' Source File in HDFS:
+              1,2015-02-10 01:13:55.55555
+              2,01:14:02.333 2015-02-10
+              
+           Notice that the first timestamp value does not match the default
+           timestamp format supported by TDCH, and the second timestamp value
+           differs in format from the first. To load this data, TDCH provides
+           users with the ability to define multiple input format strings; if
+           TDCH fails to parse the DateTime value using the default or user 
+           defined format, TDCH will attempt to parse the value by iterating
+           through the 'backup' formatting strings. To define 'backup'
+           formatting strings, utilize the following configuration property
+           template:
+           
+           	-Dtdch.input.<DateTime type>.format.<priority #>=<format string>
+           	
+           For example, the following TDCH export job could be used to load the
+           'timestamp_example' table above with the irregular records defined
+           in the 'timestampdata.txt' HDFS file:  
+           
+             su mapred
+
+             export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+             hadoop jar $TDCH_JAR
+               com.teradata.connector.common.tool.ConnectorExportTool
+               -Dtdch.input.timestamp.format.1="HH:mm:ss.SSS yyyy-MM-dd"
+               -classname com.teradata.jdbc.TeraDriver
+               -url jdbc:teradata://sampledbserver/DATABASE=sampledb
+               -username sampleuser
+               -password samplepwd
+               -jobtype hdfs
+               -fileformat textfile
+               -method batch.insert
+               -separator ","
+               -sourcepaths /user/mapred/timestampdata.txt
+               -sourcetimestampformat "yyyy-MM-dd HH:mm:ss.SSSSS"
+               -targettable timestamp_example
+               
+        7.2.2 User defined converters      
+
+           Users also have the ability to define their own conversion routines,
+           and reference these routines in the value supplied to the
+           -sourcerecordschema parameter. In this scenario, the user would also
+           need to supply a value for the -targetrecordschema parameter,
+           providing TDCH with information about the record generated by the
+           user-defined converter. 
+           
+           As an example, here's a user-defined converter which replaces 
+           occurrences of the term 'foo' in a source string with the term 'bar'
+           
+           public class FooBarConverter extends ConnectorDataTypeConverter {
+
+             public FooBarConverter(String value) {}
+
+             public final Object convert(Object object) {
+                if (object == null)
+                    return null;
+                return ((String)object).replaceAll("foo","bar");
+             }
+           }
+           
+           This user-defined converter extends the ConnectorDataTypeConverter
+           class, and thus requires an implementation for the convert(Object)
+           method. At the time of the 1.4 release, user-defined converters with
+           no-arg constructors were not supported (this bug is being tracked by
+           TDCH-775, see known issues list); thus this user-defined converter
+           employs a single arg constructor, where the input argument is not
+           used. To compile this user-defined converter, use the following 
+           syntax:
+           
+           javac FooBarConverter.java -cp 
+                           /usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+                           
+           To run using this user-defined converter, first create a new jar
+           which contains the user-defined converter's class files:
+           
+           jar cvf user-defined-converter.jar .
+
+           Then add the new jar onto the HADOOP_CLASSPATH and LIB_JARS 
+           environment variables:
+           
+           export HADOOP_CLASSPATH=
+                          /path/to/user-defined-converter.jar:$HADOOP_CLASSPATH
+           export LIB_JARS=/path/to/user-defined-converter.jar,$LIB_JARS
+           
+           Finally, reference the user-defined converter in your TDCH command.
+           As an example, this TDCH job would export 2 columns from an HDFS
+           file into a Teradata table with one int column and one string
+           column. The second column in the hdfs file will have the 
+           FooBarConverter applied to it before the record is sent to the
+           TD table:
+           
+           hadoop jar $TDCH_JAR
+             com.teradata.connector.common.tool.ConnectorExportTool
+             -libjars=$LIB_JARS
+             -url <jdbc url>
+             -username <db username>
+             -password <db password>
+             -sourcepaths <source hdfs path>
+             -targettable <target TD table>
+             -sourcerecordschema "string, FooBarConverter(value)"
+             -targetrecordschema "int, string"
+
+
+        7.2.3 Plugin parameter usage
+
+           7.2.3.1 Data transfer between Teradata and Teradata
+
+           The following sample command will make use of the following
+           Teradata table setup DDL:
+
+           CREATE MULTISET TABLE sales_transaction_target (
+               tran_id INTEGER,
+               tran_date DATE,
+               customer VARCHAR(100),
+               amount DECIMAL(18,2)
+           );
+
+           The following sample commands demonstrate how to transfer all four
+           columns from the 'sales_transaction' table in Teradata system to
+           'sales_transaction_target' table:
+           (replace "mapred" with your own hadoop user in the following
+           commands, and make sure that the user has permission to HDFS)
+
+           su mapred
+
+           export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+           hadoop jar $TDCH_JAR
+             com.teradata.connector.common.tool.ConnectorPluginTool
+             -Dtdch.input.teradata.jdbc.url=jdbc:teradata://153.64.202.175/DATABASE=mzli
+             -Dtdch.input.teradata.jdbc.user.name=dbc
+             -Dtdch.input.teradata.jdbc.password=dbc
+             -Dtdch.output.teradata.jdbc.url=jdbc:teradata://153.64.202.175/DATABASE=mzli
+             -Dtdch.output.teradata.jdbc.user.name=dbc
+             -Dtdch.output.teradata.jdbc.password=dbc
+             -Dtdch.input.teradata.table=sales_transaction
+             -Dtdch.output.teradata.table=sales_transaction_target
+             -sourceplugin teradata-split.by.hash
+             -targetplugin teradata-batch.insert
+             -nummappers 1
+
+           The above commands illustrate that all four columns of a 
+           'sales_transaction' table from Teradata system is imported using the
+           'split.by.hash' method, and exported to 'sales_transaction_target'
+           table using 'batch.insert' method. Mappers used in the job is 1.
+
+           ConnectorPluginTool tool is used for this job to configure source
+           and target plugins, which is teradata-split.by.hash and
+           teradata-batch.insert. Other parameters should be passed with
+           configuration parameter.
+
+           7.2.3.2 Data transfer between HDFS and HDFS
+
+           The following commands will be used for Avro Jobs.
+
+           export HADOOP_HOME=/usr/lib/hadoop
+           export HIVE_HOME=/usr/lib/hive
+           export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+           export HADOOP_CLASSPATH=$HIVE_HOME/lib/avro-1.7.1.jar:
+                          $HIVE_HOME/lib/avro-mapred-1.7.1.jar:
+                          $HIVE_HOME/lib/paranamer-2.3.jar
+
+           export LIB_JARS=$HIVE_HOME/lib/avro-1.7.1.jar,
+                          $HIVE_HOME/lib/avro-mapred-1.7.1.jar,
+                          $HIVE_HOME/lib/paranamer-2.3.jar
+
+           The Avro schema file used in this example has the following content,
+           and is named as avro_schema.avsc:
+
+           {
+             "type" : "record",
+             "name" : "xxre",
+             "fields" : [ {
+               "name" : "col1",
+               "type" : "int", "default":1
+             }, {
+               "name" : "col2",
+               "type" : "string"
+             }, {
+               "name" : "col3",
+               "type" : "float"
+             }, {
+               "name" : "col4",
+               "type" : "double", "default":1.0
+             }, {
+               "name" : "col5",
+               "type" : "string", "default":"xsse"
+             } ]
+           }
+
+           The following sample commands demonstrate how to export data stored
+           in path of '/user/mapred/sales_transaction' in HDFS to another path
+           of '/user/mapred/sales_transaction_avro' in HDFS with Avro file
+           format:
+
+           su mapred
+
+           hadoop fs -rmr /user/mapred/sales_transaction
+           hadoop fs -mkdir /user/mapred/sales_transaction
+           hadoop fs -put /tmp/stfile /user/mapred/sales_transaction/
+           hadoop fs -put avro_schema.avsc /user/mapred
+
+           export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+           hadoop jar $TDCH_JAR
+             com.teradata.connector.common.tool.ConnectorPluginTool
+             -libjars=$LIB_JARS
+             -Dtdch.input.hdfs.paths=/user/mapred/sales_transaction
+             -Dtdch.output.hdfs.paths=/user/mapred/sales_transaction_avro
+             -Dtdch.input.hdfs.separator=,
+             -Dtdch.output.hdfs.avro.schema.file=/user/mapred/avro_schema.avsc
+             -Dtdch.output.hdfs.field.names=col1,col2,col5,col3
+             -sourceplugin hdfs-textfile
+             -targetplugin hdfs-avrofile
+
+           The above commands illustrate that all four fields from
+           '/user/mapred/sales_transaction' are exported to
+           '/user/mapred/sales_transaction_avro' directory with Avro file
+           format. The Avro schema file is '/user/mapred/avro_schema.avsc'. The
+           field separator for source file is comma.
+
+           ConnectorPluginTool tool is used for this job to configure source
+           and target plugins, which is hdfs.textfile and hdfs.avrofile. Other
+           parameters should be passed with configuration parameter.
+
+           7.2.3.3 Data transfer between HDFS and Hive
+
+           The following sample commands demonstrate how to export data stored
+           in path of '/user/mapred/sales_transaction' in HDFS to a Hive
+           partitioned table.
+
+           su hive
+
+           hive -e "drop table sales_transaction_p;"
+           hive -e "create table sales_transaction_p(tran_id int,
+                   tran_date string,amount float) partitioned by
+                   (customer string) stored as rcfile;"
+           hive -e "insert into table sales_transaction_p partition (customer)
+                    select tran_id, tran_date,amount,customer from
+                    sales_transaction;"
+                -hiveconf hive.exec.dynamic.partition.mode=nonstrict
+
+           export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+           hadoop jar $TDCH_JAR
+             com.teradata.connector.common.tool.ConnectorPluginTool
+             -libjars=$LIB_JARS
+             -Dtdch.input.hdfs.paths=/user/mapred/sales_transaction
+             -Dtdch.input.hdfs.separator=,
+             -Dtdch.output.hive.table=sales_transaction_p
+             -sourceplugin hdfs-textfile
+             -targetplugin hive-rcfile
+
+           The above commands illustrate that all four fields from
+           '/user/mapred/sales_transaction' are exported to a Hive partitioned
+           table with RC file format. The field separator for source file is
+           comma.
+
+           ConnectorPluginTool tool is used for this job to configure source
+           and target plugins, which is hdfs-textfile and hive-rcfile. Other
+           parameters should be passed with configuration parameter.
+
+           7.2.3.4 Data transfer between Hive and Hive
+
+           The following sample commands demonstrate how to transfer all four
+           columns from Hive non-partitioned table 'sales_transaction' to a
+           Hive partitioned table 'sales_transaction_p':
+
+           hive -e "drop table sales_transaction;"
+           hive -e "create table sales_transaction(tran_id int,
+                    tran_date string, customer string,amount float)
+                    row format delimited fields terminated by ','
+                    stored as textfile;"
+           hive -e "load data local inpath '/tmp/stfile' into table
+                    sales_transaction;"
+           hive -e "drop table sales_transaction_p;"
+           hive -e "create table sales_transaction_p(tran_id int,
+                    tran_date string,amount float) partitioned by
+                    (customer string) stored as rcfile;"
+           hive -e "insert into table sales_transaction_p partition (customer)
+                    select tran_id, tran_date,amount,customer from
+                    sales_transaction;"
+                -hiveconf hive.exec.dynamic.partition.mode=nonstrict
+
+           export TDCH_JAR=/usr/lib/tdch/1.4/lib/teradata-connector-1.4.2.jar
+
+           hadoop jar $TDCH_JAR
+             com.teradata.connector.common.tool.ConnectorPluginTool
+             -Dtdch.input.hive.table=sales_transaction
+             -Dtdch.output.hive.table=sales_transaction_p
+             -sourceplugin hive-textfile
+             -targetplugin hive-rcfile
+
+           The above commands illustrate that all four columns of Hive table
+           'sales_transaction' is exported to Hive partitioned table
+           'sales_transaction_p'.
+
+           ConnectorPluginTool tool is used for this job to configure source
+           and target plugins, which is hive-textfile and hive-rcfile. Other
+           parameters should be passed with configuration parameter.
+
+8.0 Restrictions
+
+    8.1 Teradata Connector for Hadoop restrictions
+
+         a) Manual TYPE, SESSIONS, and GOVERN settings in the Teradata JDBC URL
+            are not supported. It could interfere with Teradata Connector for
+            Hadoop connection setting.
+         b) " (double quote) and \ (backward slash) are not supported as a
+            special character in Teradata database name, table name, or column
+            names.
+         c) . (dot), ' (single space), and  (space) must be quoted within
+            Teradata database name, table name, or column names.  For example,
+            TBL.COL will be treated as a qualified column name with table name
+            of TBL and column name of COL.  "TBL.COL" will be treated as a
+            non-qualified column name with a special character '.' inside the
+            column name.  To double quote strings from command line, need to
+            escape it with backslash (e.g. \"TBL.COL\").
+         d) 'split.by.amp' import method is only supported on TD 14.10.00.02+
+            and above.
+         e) Parse pattern 'X' for ISO time zone is only supported on JDK 1.7 and
+            above.
+         f) Authorization needed in Hadoop side and TD side
+            (1) First, following authorization is a must regardless of import
+                or export tool.
+                <1> Teradata Database:
+                    a> select access to the system tables: dbc.tvm,
+                    dbc.referencingtbls and dbc.dbase
+                    b> stage table/view create right
+                <2> Hadoop:
+                    metadata access right
+            (2) Second, concerning to different tools (Import/Export), other
+                permission should be given:
+                <1> For import job, table/view access right should be given for
+                    database, and HDFS file write right should be given. 
+                <2> For export job, table/view write right should be given for
+                    database,and HDFS file read right should be given.
+
+    8.2 Binary Compatibilities
+
+         N/A
+
+9.0 Limitations/Issues
+
+    9.1 Teradata Connector for Hadoop
+       
+       Known issues in the 1.4.2 release
+           
+          TDCH-1058: String to Timestamp(6) fails when first 3 nanoseconds
+                     appear in succession earlier in the timestamp string
+          TDCH-932: FileNotFoundException when exporting hive table created
+                    by union all
+          TDCH-860: TDCH doesn't support separators that include backslash
+                    characters
+          TDCH-816: Split.by.hash/value utilize first column in table rather
+                    than erroring out when table is partitioned
+          TDCH-800: Null pointer when using source/targetfieldnames with
+                    hcatalog plugin
+          TDCH-789: Import method quietly overridden to be split.by.partition
+                    when using sourcequery option
+		  TDCH-742: Null pointer thrown when double quoted column names
+		            in targettableschema include spaces
+          TDCH-685: Large VARCHAR columns (>64k) result in SQLException
+                    during internal.fastload jobs
+          TDCH-577: Internal.fastload fails when node on which TDCH job is
+     	       	    launched cannot be reached by mappers
+          TDCH-517: In some scenarios, exceptions thrown at the mapper level
+     	       	    are not propogated back to the console     
+               
+       Known issues in the 0.3 - 1.3 releases
+
+         a) ORDER BY is not supported with InputFormat (table).
+         b) ORDER BY without TOP N is not supported with InputFormat (query).
+         c) RECURSIVE query is not supported.
+         d) Queue Table is not supported.
+         e) Custom UDT is not supported.
+         f) Geospatial type is not supported.
+         g) Teradata GRAPHIC, VARGRAPHIC, LONG VARGRAPHIC types are not supported.
+         h) Teradata Array type is supported with InputFormat only.
+         i) Teradata BLOB column's length must be 64KB or less with export.
+         j) Teradata CLOB column's length must be 64KB or less with export.
+         k) Teradata BYTE, VARBYTE, BLOB's column contents are converted to HEX
+            string in data type conversion to string.
+         l) only UTF8 character set is supported.
+         m) Teradata Extended Object Names do not support non-printing character.
+         n) For 'internal.fastload' method, whenever TIME and TIMESTAMP are
+            used, TNANO and TSNANO (respectively) should be specified on JDBC
+            connection string. The value for each must be less than or equal to
+            the 'n' declared for TIME and TIMESTAMP in the destination table.
+            Note that a TIME and TIMESTAMP without "(n)" implies n=6, the
+            default and maximum value.
+         o) 'split.by.value' method doesn't support split-by column that has
+            null value in it.
+
+    9.2 Hadoop Map/Reduce
+
+         a) With mapred.tasktracker.map.tasks.maximum property set to a high
+            number in mapred-site.xml exceeding the total number of tasks for a
+            job, it could result in a task scheduling skew onto a subset of nodes
+            by the Capacity Scheduler. The result is that only a subset of the
+            data transfer throughput capabilities are utilized and job's overall
+            data transfer throughput performance are impacted. The workaround
+            is to set the mapred.capacity-scheduler.maximum-tasks-per-heartbeat
+            property in the capacity-scheduler.xml to a small number (e.g. 4)
+            to allow more nodes a fair chance at running tasks.
+         b) HDFS file's field format must match table column's format when
+            loading to table.
+         c) When OutputFormat's batch size parameter is manually set to a large 
+            number, the JVM heap size for mapper/reducer tasks need to be set
+            to an appropriate value to avoid OutOfMemoryException.
+         d) When OutputFormat's method is set to internal.fastload, all tasks
+            (either mappers or reducers) must be started together. In another
+            word, the total number of mapper or reducer tasks must be less than
+            or equal to the maximum concurrently runnable mapper or reducer
+            tasks allowed by the Hadoop cluster setting.
+         e) When OutputFormat's method is set to internal.fastload, the
+            total number of tasks (either mappers or reducers) must be less than
+            or equal to the total number of AMPs on the target Teradata system
+         f) 'internal.fastload' method will proceed with data transfer only
+            after all tasks are launched; when a user requests more mappers
+            than the cluster can run concurrently, the job will hang and
+            time out after 8 minutes. TDCH attempts to check the number of
+            mappers requested by the job submitter against the value returned
+            from ClusterStatus.getMaxMapTasks, and throw a warning message
+            when the requested value is greater than the cluster's maximum
+            map tasks. The ClusterStatus.getMaxMapTasks method returns
+            incorrect results when TDCH is run on YARN-enabled clusters, and
+            thus the TDCH warning may not always be thrown in this situation.
+ 
+
+    9.3 Hive
+
+         a) "-hiveconf" option is used to specify the path of a hive
+            configuration file (see parameter #25 in section 5.2 and parameter
+            #28 in section 5.3.)  It is required for a HIVE or HCAT job. With
+            version 1.0.7, the file can be located in HDFS (hdfs://) or in a
+            local file system (file://). Without the URI schema (hdfs:// or
+            file://) specified, the default schema name is "hdfs". Without the
+            "-hiveconf" parameter specified, the "hive-site.xml" file should be
+            located in $HADOOP_CLASSPATH, a local path, before running the TDCH
+            job. For example, if the file "hive-site.xml" is in "/home/hduser/",
+            a user should export the path using the following command before
+            running the TDCH job:
+
+               export HADOOP_CLASSPATH=/home/hduser/conf:$HADOOP_CLASSPATH
+
+         b) On Hive complex type support, we only support data type conversion
+            between complex types of Hive and string data types(CLOB,VARCHAR)
+            in Teradata. During exporting, all complex data types value of Hive
+            will be converted to corresponding JSON string. During importing,
+            a VARCHAR or CLOB value of Teradata will be interpreted as the JSON
+            string of the corresponding complex data types of Hive.
+         c) To support ORC file format, please use hive 0.11 or higher version.
+         d) Hive MAP, ARRAY, and STRUCT types are supported with export and
+            import, and converted to and from VARCHAR in JSON format in Teradata
+            system.
+         e) Hive UNIONTYPE is not yet supported.
+         f) Partition values with import to Hive partitioned table cannot be
+            null or empty.
+         g) 'split.by.partition' is the required method for importing into Hive
+            partitioned tables.
+         h) '/' and '=' is not supported for string value of a partition column
+            of hive table.
+
+     9.4 Avro
+
+         a) On Avro complex type (except UNION) support, we only support data
+            type conversion between complex types to/from string data types
+            (CLOB,VARCHAR) in Teradata. 
+
+         b) When importing data from Teradata to an Avro file, if a field data
+            type in Avro is UNION with null and the corresponding source column
+            in Teradata table is nullable,
+             i) a NULL value is converted to a null value within a UNION value
+                in the corresponding target field of Avro.
+            ii) a non-NULL value is converted to a value of corresponding type
+                within a UNION value in the corresponding target Avro field.
+
+         c) When exporting data from Avro to Teradata, if a field data type in
+            Avro is UNION with null and 
+             i) target column is nullable, then a NULL value within UNION  
+                is converted to a NULL value in the target Teradata table column.
+            ii) target column is not nullable, then a NULL value within UNION
+                is converted to a connector-defined default value of the
+                specified data type.
+
+         d) TDCH currently supports only Avro binary encoding. 

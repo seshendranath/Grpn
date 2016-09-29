@@ -1,0 +1,82 @@
+context:
+   table:  ${schema},${base_table}
+   source: ${rep_user},${rep_pass}
+   power_user: ${prep_user}
+   power_pass: ${prep_pass}
+   namenode: ${nn}
+   prefix: ${td_backup}
+   inc_key: ''
+   inc_date: ''
+   writers: 5
+   fastexporters: 1
+
+start_task:
+   class: NopTask
+
+settings:
+   # Retry the backup from TD to Cerebro 2 times if it fails for the first time
+   attempts: 1
+   cooldown: 5
+   try: 0
+
+mysql_username:
+   class: ScriptTask
+   dependencies:
+      - start_task
+   emits:
+      - source
+   configuration:
+       script: |
+            td_username=$(mysql -hpit-prod-owmaster1.snc1 -utd_archive -ptd_archive123 td_archive -e "select trim(td_username) from job_table_map where table_name='${base_table}' and schema_name='${schema}'" | tail -1 )
+            if [[ ! -z $td_username ]];
+            then
+               echo "{source: 'tdwc/$td_username,${power_pass}'}"
+            fi
+
+mysql_writers:
+   class: ScriptTask
+   dependencies:
+      - mysql_username
+   emits:
+      - writers
+   configuration:
+       script: |
+            td_writers=$(mysql -hpit-prod-owmaster1.snc1 -utd_archive -ptd_archive123 td_archive -e "select td_writers from job_table_map where table_name='${base_table}' and schema_name='${schema}'" | tail -1 )
+            if [[ ! -z $td_writers ]];
+            then
+               echo "{writers: '$td_writers'}"
+            fi
+
+mysql_fastexporters:
+   class: ScriptTask
+   dependencies:
+      - mysql_writers
+   emits:
+      - fastexporters
+   configuration:
+       script: |
+            td_fastexporters=$(mysql -hpit-prod-owmaster1.snc1 -utd_archive -ptd_archive123 td_archive -e "select td_fastexporters from job_table_map where table_name='${base_table}' and schema_name='${schema}'" | tail -1 )
+            if [[ ! -z $td_fastexporters ]];
+            then
+               echo "{fastexporters: '$td_fastexporters'}"
+            fi
+
+do_backup:
+   class: ScriptTask
+   dependencies:
+      - mysql_fastexporters
+   configuration:
+       script: |
+            TABLE_ARGS=${table}
+            if [ x"" != x"${inc_key}" ];
+            then
+                TABLE_ARGS=$TABLE_ARGS",${inc_key}"
+            fi
+            if [ x"" != x"${inc_date}" ];
+            then
+                TABLE_ARGS=$TABLE_ARGS",'${inc_date}'"
+            fi
+            CMD="--table $TABLE_ARGS --source ${source} --namenode ${namenode} --prefix ${prefix} --export "
+            echo $CMD | sh /home/etl_adhoc/Replicator/scripts/backup_to_cerebro_test/run.sh
+            exit $?
+

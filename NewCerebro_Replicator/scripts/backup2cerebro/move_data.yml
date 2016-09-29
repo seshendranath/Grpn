@@ -1,0 +1,33 @@
+context:
+   table:  ${schema},${base_table}
+   source: ${rep_user},${rep_pass}
+   power_user: ${prep_user}
+   power_pass: ${prep_pass}
+   namenode: ${nn}
+   prefix: ${td_backup}
+   inc_key: ''
+   inc_date: ''
+   writers: 5
+   fastexporters: 1
+
+start_task:
+   class: NopTask
+
+do_backup:
+   class: ScriptTask
+   dependencies:
+      - start_task 
+   configuration:
+       script: |
+            TABLE_ARGS=${table}
+            if [ x"" != x"${inc_key}" ];
+            then
+                TABLE_ARGS=$TABLE_ARGS",${inc_key}"
+            fi
+            if [ x"" != x"${inc_date}" ];
+            then
+                TABLE_ARGS=$TABLE_ARGS",'${inc_date}'"
+            fi
+            CMD="--table $TABLE_ARGS --source ${source} --namenode ${namenode} --prefix ${prefix} --writers ${writers} --fastexporters ${fastexporters} --export "
+            echo $CMD | sh /home/svc_replicator_prod/Replicator/scripts/backup2cerebro/run.sh
+            exit $?

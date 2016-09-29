@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+	<!-- Common Properties -->
+
+	<property>
+		<name>tdch.num.mappers</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.num.reducers</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.write.phase.close</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.converter.record.schema</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.converter.record.schema</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.date.format</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.date.format</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.time.format</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.time.format</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.timestamp.format</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.timestamp.format</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.timezone.id</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.timezone.id</name>
+		<value></value>
+	</property>
+
+
+	<!-- Teradata Source -->
+
+	<property>
+		<name>tdch.input.teradata.jdbc.driver.class</name>
+		<value>com.teradata.jdbc.TeraDriver</value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.jdbc.url</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.jdbc.user.name</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.jdbc.password</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.database</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.table</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.query</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.conditions</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.field.names</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.data.dictionary.use.xview</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.access.lock</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.batch.size</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.query.band</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.num.partitions</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.stage.database</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.stage.table.name</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.stage.table.forced</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.input.teradata.split.by.column</name>
+		<value></value>
+	</property>
+
+	
+	<!-- HDFS Target -->
+	
+	<property>
+		<name>tdch.output.hdfs.separator</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.line.separator</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.null.string</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.null.non.string</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.enclosed.by</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.escaped.by</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.avro.schema.file</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.field.names</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.schema</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hdfs.paths</name>
+		<value></value>
+	</property>
+
+
+	<!-- Hive Target -->
+	
+	<property>
+		<name>tdch.output.hive.conf.file</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.fields.separator</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.line.separator</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.null.string</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.database</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.table</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.paths</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.table.schema</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.partition.schema</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hive.field.names</name>
+		<value></value>
+	</property>
+
+
+	<!-- HCat Target -->
+	
+	<property>
+		<name>tdch.output.hcat.field.names</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hcat.database</name>
+		<value></value>
+	</property>
+	<property>
+		<name>tdch.output.hcat.table</name>
+		<value></value>
+	</property>
+
+
+</configuration>

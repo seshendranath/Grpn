@@ -1,0 +1,164 @@
+sudo epkg tungsten_replicator-3.0.0.526.20160129
+sudo epkg java-1.8.0_72
+
+
+sudo mkdir /etc/tungsten
+sudo chown tungsten:tungsten /etc/tungsten
+sudo mkdir /var/groupon/tung
+sudo chown tungsten:tungsten /var/groupon/tung
+sudo mkdir /var/groupon/tung/temp
+sudo mkdir /var/groupon/tung_meta
+sudo chown tungsten:tungsten /var/groupon/tung_meta
+
+rm -rf /var/groupon/tung/install
+mkdir /var/groupon/tung/install
+tar -C /var/groupon/tung/install -zxf /usr/local/lib/tungsten_replicator.tar.gz
+chmod 777  /var/groupon/tung/install/tungsten_replicator
+rm /tmp/tungsten-configure.log
+sudo ln -s /usr/local/lib/tungsten_replicator /var/groupon/tung
+
+vi /etc/tungsten/tungsten.ini
+
+
+ADD ULIMITS FILE -- DO NOT FORGET
+
+sudo /var/tmp/roll hostclass.yml host.yml
+
+replicator stop
+/var/groupon/tung/install/tungsten_replicator/tools/tpm update
+replicator start
+
+
+
+MASTER TUNGSTEN.INI
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+[defaults]
+install-directory=/var/groupon/tung
+java-file-encoding=UTF8
+java-user-timezone=GMT
+mysql-enable-enumtostring=true
+mysql-enable-settostring=true
+mysql-use-bytes-for-string=false
+property=replicator.filter.pkey.addColumnsToDeletes=true
+property=replicator.filter.pkey.addPkeyToInserts=true
+property=replicator.extractor.dbms.usingBytesForString=true
+replication-password=TungSt3n!
+replication-user=tungsten
+rmi-port=10005
+skip-validation-check=HostsFileCheck
+skip-validation-check=MySQLNoMySQLReplicationCheck
+skip-validation-check=MySQLPermissionsCheck
+skip-validation-check=MySQLSettingsCheck
+skip-validation-check=ReplicationServicePipelines
+skip-validation-check=THLStorageCheck
+svc-extractor-filters=colnames,fixmysqlstrings,pkey,schemachange
+auto-recovery-delay-interval=3m
+auto-recovery-max-attempts=5
+auto-recovery-reset-interval=30m
+thl-log-retention=4d
+temp-directory=/var/groupon/tung/temp
+user=tungsten
+[accounting]
+master=pit-prod-megatron-master1
+members=pit-prod-megatron-master1
+replication-host=accounting-db2.snc1
+dataservice-thl-port=2204
+[groupon]
+master=pit-prod-megatron-master1
+members=pit-prod-megatron-master1
+replication-host=gds-snc1-prod-pwa-split2-ro-vip.snc1
+dataservice-thl-port=2203
+[killbill]
+master=pit-prod-megatron-master1
+members=pit-prod-megatron-master1
+replication-host=gds-snc1-prod-killbill-new-rw-vip.snc1
+dataservice-thl-port=2201
+[killbill_latam]
+master=pit-prod-megatron-master1
+members=pit-prod-megatron-master1
+replication-host=gds-snc1-prod-killbill-latam-ro-vip.snc1
+dataservice-thl-port=2200
+[pricing_differential]
+master=pit-prod-megatron-master1
+members=pit-prod-megatron-master1
+replication-host=pricing-differential-db3.snc1
+dataservice-thl-port=2122
+[voucher_txn_db]
+master=pit-prod-megatron-master1
+members=pit-prod-megatron-master1
+replication-host=gds-snc1-prod-voucher-service-ro-vip.snc1
+dataservice-thl-port=2202
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+SLAVE TUNGSTEN.INI
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+[defaults]
+property=replicator.applier.dbms.parallelization=20
+property=replicator.applier.dbms.partitionBy=tungsten_commit_timestamp
+property=replicator.applier.dbms.partitionByClass=com.continuent.tungsten.replicator.applier.batch.DateTimeValuePartitioner
+property=replicator.applier.dbms.partitionByFormat='ds='yyyy-MM-dd'/hr='HH
+property=replicator.datasource.global.directory=/var/groupon/tung_meta
+property=replicator.stage.q-to-dbms.blockCommitInterval=600s
+property=replicator.stage.q-to-dbms.blockCommitPolicy=lax
+property=replicator.stage.q-to-dbms.blockCommitRowCount=2000000
+thl-log-retention=3d
+property=replicator.filter.monitorschemachange.notify=true
+property=replicator.applier.dbms.useUpdateOpcode=true
+batch-enabled=true
+batch-load-language=js
+batch-load-template=hadoop
+datasource-type=file
+install-directory=/var/groupon/tung
+java-file-encoding=UTF8
+property=replicator.datasource.global.csvType=hive
+rmi-port=10005
+skip-validation-check=DatasourceDBPort
+skip-validation-check=DirectDatasourceDBPort
+skip-validation-check=HostsFileCheck
+skip-validation-check=InstallerMasterSlaveCheck
+auto-recovery-delay-interval=3m
+auto-recovery-max-attempts=5
+auto-recovery-reset-interval=30m
+svc-applier-filters=schemachange,monitorschemachange
+temp-directory=/var/groupon/tung/temp
+user=tungsten
+[getaways_content]
+master=flumecollector3
+members=pit-prod-megatron-slave1
+dataservice-thl-port=2116
+property=replicator.master.connect.uri=thl://flumecollector3:2116/
+property=replicator.applier.dbms.stageDirectory=/var/groupon/tung/temp/staging/getaways_content
+[getaways_inventory]
+master=flumecollector3
+members=pit-prod-megatron-slave1
+dataservice-thl-port=2117
+property=replicator.master.connect.uri=thl://flumecollector3:2117/
+property=replicator.applier.dbms.stageDirectory=/var/groupon/tung/temp/staging/getaways_inventory
+[groupon_orders]
+master=pit-prod-megatron-sox-master.lup1
+members=pit-prod-megatron-slave1
+dataservice-thl-port=2113
+property=replicator.master.connect.uri=thl://pit-prod-megatron-sox-master.lup1:2113/
+property=replicator.applier.dbms.stageDirectory=/var/groupon/tung/temp/staging/groupon_orders
+[groupon_orders_snc1]
+master=flumecollector3
+members=pit-prod-megatron-slave1
+dataservice-thl-port=2118
+property=replicator.master.connect.uri=thl://flumecollector3:2118/
+property=replicator.applier.dbms.stageDirectory=/var/groupon/tung/temp/staging/groupon_orders_snc1
+[pricing]
+master=flumecollector3
+members=pit-prod-megatron-slave1
+dataservice-thl-port=2123
+property=replicator.master.connect.uri=thl://flumecollector3:2123/
+property=replicator.applier.dbms.stageDirectory=/var/groupon/tung/temp/staging/pricing
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
