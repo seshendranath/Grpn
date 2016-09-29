@@ -1,0 +1,39 @@
+settings:
+    fair_scheduling_queue: p5
+    megatron.etl_status_dsn: megatron_etl_status
+    megatron.table_limits_dsn: table_limits
+    megatron.string_shortener: abbreviate
+    megatron.hdfs_tungsten_staging_loc: /user/tungsten/staging
+    megatron.hdfs_table_base_loc: /data/unity/raw
+    megatron.work_dir: /var/groupon/megatron
+    megatron.parallel_tasks: 25
+    megatron.parallel_sqoop_tasks: 1
+    megatron.parallel_td_load: 4
+
+groupon_orders_snc1:
+    class: megatron.SynchronizeTables
+    configuration:
+        run_mode: ${run_mode}
+        service_name: groupon_orders_snc1
+        mysql_dsn: groupon_orders_snc1_dsn
+        mysql_db: groupon_production
+        tables:
+            - campaign_membership_coupons:
+              column_overrides: [order_summary: [length: 256] ]
+              string_shortener: truncate
+            - fulfillments
+            - fulfillment_line_items
+            - fulfillment_states
+            - order_discount_versions
+            - order_discounts
+            - order_request_details
+            - order_shipping_cost_versions
+            - shipments
+            - shipment_line_items
+            - tax_documents
+        hive_schema: subs
+        targets:
+            - load_tdwc:
+                schema: MEG_GRP_PROD
+                view_schema: sandbox
+                dsn: tungsten_tdwc_dsn

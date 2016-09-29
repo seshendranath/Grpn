@@ -1,0 +1,9 @@
+service_name: test1
+stage_location: /user/tungsten/unit_test/staging/test1
+inc_merge: True
+use_last: False
+use_all: False
+dop: 20
+sqoop_dop: 3
+etl_status_dsn: tungsten_etl_status_dev
+#use_all: True

@@ -1,0 +1,54 @@
+dsn: getaways_inventory
+
+hive_schema: groupon_orders
+string_shortener: abbreviate
+
+include_table:
+    - gtwy_travel_inv.hotel:
+        string_shortener: truncate
+    - gtwy_travel_inv.product_set:
+        string_shortener: truncate
+    - gtwy_travel_inv.rate_plan:
+        string_shortener: truncate
+    - gtwy_travel_inv.rate_plan_daily_rate:
+        string_shortener: truncate
+    - gtwy_travel_inv.rate_plan_daily_rate_last_minute:
+        string_shortener: truncate
+    - gtwy_travel_inv.room_type:
+        string_shortener: truncate
+    - gtwy_travel_inv.room_type_inventory:
+        string_shortener: truncate
+    - gtwy_travel_inv.rate_plan_daily_rate_product_set:
+        string_shortener: truncate
+        table_name: rate_plan_dly_product_set
+
+    - gtwy_travel_inv.rate_plan_daily_and_one_rate_restriction:
+        string_shortener: abbreviations
+        table_name: rate_plan_dly_restriction
+    - gtwy_travel_inv.rate_plan_restriction:
+        string_shortener: abbreviations
+    - gtwy_travel_inv.restriction:
+        string_shortener: abbreviations
+        table_name: getaways_restriction 
+    - gtwy_travel_inv.rate_plan_sold:
+        string_shortener: abbreviations
+
+    - gtwy_travel_inv.booking_fee_log
+    - gtwy_travel_inv.product_set_log
+    - gtwy_travel_inv.product_set_restriction_log
+    - gtwy_travel_inv.rate_plan_daily_and_one_rate_restriction_log
+    - gtwy_travel_inv.rate_plan_daily_rate_last_minute_log
+    - gtwy_travel_inv.rate_plan_daily_rate_product_set_log
+    - gtwy_travel_inv.rate_plan_log
+    - gtwy_travel_inv.rate_plan_restriction_log
+    - gtwy_travel_inv.room_type_inventory_log    
+   
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: groupon_production
+        prefix: inv_
+        staging_schema: staging
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/getaways_inventory

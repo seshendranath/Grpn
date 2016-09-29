@@ -1,0 +1,28 @@
+dsn: getaways_content
+
+hive_schema: groupon_orders
+
+include_table:
+    - travel_content_production.hotel
+    - travel_content_production.product_set
+    - travel_content_production.rate_plan
+    - travel_content_production.room_type
+    - travel_content_production.region:
+        table_name: getaways_region
+    - travel_content_production.star_rating
+    - travel_content_production.hotel_id_external_mapping:
+        table_name: hotel_id_external_map
+    - travel_content_production.review_hotel_summary
+    - travel_content_production.hotel_loyalty_program
+    - travel_content_production.active_status_type
+ 
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc_prod
+        schema: groupon_production
+        prefix: cont_
+        staging_schema: staging
+
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/getaways_content

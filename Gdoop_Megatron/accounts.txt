@@ -1,0 +1,39 @@
+I marked you as Owner of these ID's and you are responsible for manage these accounts .
+TDWC:
+
+ TDWC Password for tungsten_dev has been set to pcvqcs9chf
+ TDWC Password for tungsten_prod has been set to bd78jtqsmj
+
+LUP
+Password for tungsten_prod has been set to glb9jxfhvz
+Password for tungsten_dev has been set to o3zukzbsvo
+
+
+
+EXISTING DBS:
+groupon_orders_snc1:  orders-db-replica-etl-split2-vip.snc1
+groupon_orders:  orders-db-replica-etl-vip.lup1
+getaways_content:  getaways-content-db2.snc1
+getaways_inventory:  getaways-mysql-travel-inventory-db2.snc1
+groupon:  db-replica-etl-vip.snc1
+groupon_user:  users-db-replica-vip.snc1
+          
+
+NEW:
+Dipali
+  pomanager:   si-pomanager-db2.snc1
+  goods_shipment:    goods-shipment-db-master-vip.snc1
+   
+  goods_receiver:    goods-receiver-db2.snc1
+  goods_outbound_controller:  goods-outbound-controller-db2.snc1
+
+Basundra:
+  gpn_analytics:  gpn-analytics1.snc1
+  accounting:  accounting-db-master-vip
+  pricing_differential:  pricing-differential-db-slave-vip
+  pricing:  pricing-db-replica-vip
+  paygw:  paygw-db-master-vip
+  goods_itemmaster:  goods-itemmaster-db-slave-vip.snc1
+  mastermerchant:  mastermerchant-db2
+  custsvc:  custsvc-db-master-vip
+  travel_payment:  travel-payment-reconciliation-db-vip.snc1

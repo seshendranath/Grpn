@@ -1,0 +1,44 @@
+dsn: accounting_dsn
+table_limits_dsn: table_limits
+
+hive_schema: accounting_svc
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/accounting
+
+string_shortener: abbreviate
+
+include_table:
+    - accounting_service_production.bookings
+    - accounting_service_production.business_workflow_by_schedule:
+        table_name: business_wf_by_schedule
+    - accounting_service_production.business_workflow_runs:
+        table_name: bus_wf_runs
+    - accounting_service_production.business_workflow_run_details:
+        table_name: bus_wf_run_details
+    - accounting_service_production.comments
+    - accounting_service_production.delayed_jobs
+    - accounting_service_production.groupon_vouchers
+    - accounting_service_production.invoices_merchant_payments:
+        table_name: invoices_merch_payments
+    - accounting_service_production.invoice_runs
+    - accounting_service_production.merchant_payment_invoice_mappings:
+        table_name: merch_payment_invoice_map
+    - accounting_service_production.message_errors
+    - accounting_service_production.model_scheduled_jobs
+    - accounting_service_production.payment_term_schedules
+    - accounting_service_production.payment_transaction_vouchers:
+        table_name: payment_trans_vouchers
+    - accounting_service_production.remittance_details
+    - accounting_service_production.risk_models
+    - accounting_service_production.room_nights
+    - accounting_service_production.schedule_invoices
+    - accounting_service_production.users
+    - accounting_service_production.versions
+ 
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: sandbox
+        staging_schema: staging
+

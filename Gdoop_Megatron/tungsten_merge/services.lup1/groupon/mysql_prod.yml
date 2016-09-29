@@ -1,0 +1,28 @@
+dsn: groupon_dsn
+
+hive_schema: subs
+
+include_table:
+    - groupon_production.campaigns
+    - groupon_production.channels
+    - groupon_production.campaign_details
+    - groupon_production.campaign_pledges
+    - groupon_production.deal_locations
+    - groupon_production.deal_localized_contents
+    - groupon_production.deal_option_localized_contents
+    - groupon_production.divisions
+    - groupon_production.division_areas
+    - groupon_production.merchants
+    - groupon_production.merchant_locations
+    - groupon_production.subscriptions
+    - groupon_production.subscription_leads
+    
+
+target_database:
+    - load_tdwb:
+        dsn: tungsten_tdwb
+        schema: edwdev
+        staging_schema: edwdev 
+
+final_table_loc: /user/megatron/data 
+work_dir: /var/groupon/megatron/groupon

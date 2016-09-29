@@ -1,0 +1,9 @@
+dsn: groupon_production
+final_table_loc: /user/tungsten/final_groupon_production
+work_dir: /var/groupon/tungsten_merge_groupon_production
+hive_schema: tungsten_gp
+min_part: "ds=2014-04-14/hr=01"
+
+table_info:
+    groupon_production.users:
+        num_reducers: 10

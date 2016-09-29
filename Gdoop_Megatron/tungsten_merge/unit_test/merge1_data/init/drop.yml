@@ -1,0 +1,8 @@
+create_td_temp_local:
+    class: SQLExecute
+    configuration:
+      db:
+        adapter: Teradata
+        dsn: tdwc_test
+      sql:
+             - call ${dw_udf_lib}.drop_table_if_exists('sandbox','test1_table');

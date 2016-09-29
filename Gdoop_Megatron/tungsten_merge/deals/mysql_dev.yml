@@ -1,0 +1,18 @@
+dsn: deals
+table_limits_dsn: table_limits
+
+hive_schema: deals
+work_dir: /var/groupon/megatron/deals
+
+megatron_runtime_loc: /user/megatron/runtime
+final_table_loc: /user/megatron/data
+
+include_table:
+    - deal_catalog_production.deal_distribution_regions 
+    - deal_catalog_production.deal_distribution_windows
+
+target_database:
+    - load_tdwb:
+        dsn: tungsten_tdwb
+        schema: edwdev
+        staging_schema: edwdev

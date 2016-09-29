@@ -1,0 +1,8 @@
+service_name: groupon_pricing
+stage_location: /user/tungsten/staging/groupon_pricing
+inc_merge: True
+use_last: False
+use_all: False
+dop: 50
+sqoop_dop: 2
+etl_status_dsn: megatron_etl_status

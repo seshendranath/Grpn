@@ -1,0 +1,8 @@
+service_name: groupon_orders
+stage_location: /user/grp_gdoop_edw_meg_prod/staging/groupon_orders
+inc_merge: True
+dop: 25
+load_dop: 2
+sqoop_dop: 3
+etl_status_dsn: megatron_etl_status
+cluster_name: snc1_gdoop

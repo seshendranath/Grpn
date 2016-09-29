@@ -1,0 +1,13 @@
+service_name: hadooprep_test
+stage_location: /user/tungsten/hadooprep_test_staging
+final_table_loc: /user/tungsten/final_test
+work_dir: /var/groupon/tungsten_merge
+hive_schema: tungsten_test
+sqoop_delay: 5
+inc_merge: True
+use_last: True
+use_all: False
+dop: 25
+load_dop: 4
+sqoop_dop: 2
+   

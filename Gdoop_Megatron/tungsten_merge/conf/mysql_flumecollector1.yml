@@ -1,0 +1,4 @@
+dsn: my_test
+include_table:
+    - test1.test_tab31
+

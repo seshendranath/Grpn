@@ -1,0 +1,13 @@
+export_dim_country:
+    class: SQLExport
+    configuration:
+        db:
+            adapter: Teradata
+            dsn: tdwc_test 
+        filename: ${out_file}
+        header: false
+        delimiter: ","
+        quoting: 0
+        sql:
+             - SELECT * FROM sandbox.test1_table;
+

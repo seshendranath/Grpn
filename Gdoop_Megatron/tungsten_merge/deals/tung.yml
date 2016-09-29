@@ -1,0 +1,8 @@
+service_name: deals
+stage_location: /user/tungsten/staging/deals
+inc_merge: True
+dop: 25
+load_dop: 2
+sqoop_dop: 3
+etl_status_dsn: megatron_etl_status
+cluster_name: snc1

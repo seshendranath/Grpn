@@ -1,0 +1,53 @@
+dsn: killbill_latam_dsn
+
+hive_schema: killbill_latam_snc1
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/killbill_latam
+
+string_shortener: abbreviate
+
+include_table:
+    - killbill_latam_production.analytics_account_fields
+    - killbill_latam_production.analytics_account_tags
+    - killbill_latam_production.analytics_account_transitions
+    - killbill_latam_production.analytics_accounts
+    - killbill_latam_production.analytics_bundle_fields
+    - killbill_latam_production.analytics_bundle_tags
+    - killbill_latam_production.analytics_bundles
+    - killbill_latam_production.analytics_currency_conversion
+    - killbill_latam_production.analytics_invoice_adjustments
+    - killbill_latam_production.analytics_invoice_credits
+    - killbill_latam_production.analytics_invoice_fields
+    - killbill_latam_production.analytics_invoice_item_adjustments
+    - killbill_latam_production.analytics_invoice_items
+    - killbill_latam_production.analytics_invoice_tags
+    - killbill_latam_production.analytics_invoices
+    - killbill_latam_production.analytics_notifications
+    - killbill_latam_production.analytics_notifications_history
+    - killbill_latam_production.analytics_payment_auths
+    - killbill_latam_production.analytics_payment_captures
+    - killbill_latam_production.analytics_payment_chargebacks
+    - killbill_latam_production.analytics_payment_credits
+    - killbill_latam_production.analytics_payment_fields
+    - killbill_latam_production.analytics_payment_purchases
+    - killbill_latam_production.analytics_payment_refunds
+    - killbill_latam_production.analytics_payment_tags
+    - killbill_latam_production.analytics_payment_voids
+    - killbill_latam_production.analytics_reports
+    - killbill_latam_production.analytics_subscription_transitions
+    - killbill_latam_production.paypal_express_payment_methods
+    - killbill_latam_production.paypal_express_responses
+    - killbill_latam_production.paypal_express_transactions
+    - killbill_latam_production.payu_latam_payment_methods
+    - killbill_latam_production.payu_latam_responses
+    - killbill_latam_production.payu_latam_transactions
+    - killbill_latam_production.payments
+    - killbill_latam_production.payment_methods
+
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: groupon_production
+        prefix: kbl_
+        staging_schema: staging

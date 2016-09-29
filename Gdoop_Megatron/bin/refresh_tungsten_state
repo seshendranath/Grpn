@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+"""
+Usage:
+  refresh_tungsten_state.py [-b | --bounce_on_stall] [--dsn=<mysql_dsn>] [--threshold=<latency_threshold>]
+  refresh_tungsten_state.py (-h|--help)
+
+Options:
+    -h --help     Show this help
+    -b --bounce_on_stall   Bounce tungsten service if stall detected. RelativeLatency > latency_threshold
+    --dsn=<mysql_dsn>   megatron's mysql metastore server [default: megatron_etl_status]
+    --threshold=<latency_threshold>   Service is bounced only if relative latency exceeds this many seconds [default: 3600]
+"""
+from docopt import docopt
+import subprocess
+import sys
+import time
+from zombie_runner.shared.sql import SQL
+
+def logger(msg):
+    timestamp = time.strftime("%d/%m/%Y %H:%M:%S")
+    print "[{timestamp}] {msg}".format(**locals())
+
+class LatencyManager:
+    def __init__(self, args) :
+        self.dsn = args["--dsn"]
+        self.bounce = args["--bounce_on_stall"]
+        self.maxLatency = int(args["--threshold"])
+        if self.dsn == "none":
+            self.connection = None
+        else:
+            self.connection = SQL(dsn=self.dsn,  adapter="MySQLDirect")
+    
+    def __get_hostname():
+        cmd = 'hostname -f'
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = p.communicate()
+        result = p.returncode
+        return stdout.strip()
+
+    host_name = __get_hostname()
+    
+    def bounce_if_needed(self, service, latency, state):
+        if float(latency) > self.maxLatency and (state == "ONLINE" or state == "OFFLINE:ERROR"):
+            logger( "BOUNCING SERVICE: {service}, state: {state}, latency: {latency}".format(**locals()) )
+            service_offline_cmd = "trepctl -service {service} offline".format(**locals())
+            logger( service_offline_cmd )
+            pstatus = subprocess.Popen(service_offline_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (l_stdout, l_stderr) = pstatus.communicate()
+            time.sleep(5)
+            service_online_cmd = "trepctl -service {service} online".format(**locals())
+            logger( service_online_cmd )
+            pstatus = subprocess.Popen(service_online_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (l_stdout, l_stderr) = pstatus.communicate()
+        else:
+            logger( "good service: {service}, state: {state}, latency: {latency}".format(**locals()) )
+            
+            
+    def refresh_service_latencies(self):
+        services_cmd = 'trepctl services | grep serviceName'
+        p = subprocess.Popen(services_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = p.communicate()
+        result = p.returncode
+        kv_pairs = ""
+        for l in stdout.split('\n'):
+            svc_list = l.split()
+            state_dict = {}
+            if (len(svc_list) > 2):
+                service = svc_list[2]
+                service_state_cmd = 'trepctl -service %s status' % service
+                pstatus = subprocess.Popen(service_state_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                (l_stdout, l_stderr) = pstatus.communicate()
+                state_values = l_stdout.split('\n')
+                for line in state_values:
+                    state_kv = line.split()
+                    if (len(state_kv) == 3 and state_kv[1] == ":"):
+                        state_dict[state_kv[0].lower()] = state_kv[2]
+                        
+                if (len(state_dict) > 2):
+                    sep = "" if (len(kv_pairs) == 0) else ", "
+                    latency = state_dict['relativelatency'] if service not in ["getaways_content", "groupon"] else 0
+                    state = state_dict['state']
+                    if self.bounce:
+                        self.bounce_if_needed(service, latency, state)
+                    kv_pairs += "%s('%s', '%s', %s, '%s')" %(sep, self.host_name, service, latency, state_dict['state'])
+        
+        if (len(kv_pairs) > 0):
+            query = "REPLACE INTO service_state (host_name, service_name, latency, tungsten_state) VALUES %s" % kv_pairs
+            self.execute(query)
+ 
+    def execute(self, sql):
+        if self.connection is not None:
+            with self.connection.get_cursor() as cursor:
+                cursor.execute(sql)
+       
+if __name__ == "__main__":
+    args = docopt(__doc__)
+    latencyManager = LatencyManager(args)
+    latencyManager.refresh_service_latencies()
+    
+

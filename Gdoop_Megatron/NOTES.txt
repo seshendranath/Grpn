@@ -1,0 +1,4 @@
+/usr/local/bin/zombie_runner run ~/megatron/services --context=megatron_run_mode:full_load
+/usr/local/bin/zombie_runner run ~/megatron/services --context=megatron_run_mode:sqoop
+/usr/local/bin/zombie_runner run ~/megatron/services --context=megatron_run_mode:load
+/usr/local/bin/zombie_runner run ~/megatron/services --context=megatron_run_mode:merge

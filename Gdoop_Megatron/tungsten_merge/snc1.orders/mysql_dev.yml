@@ -1,0 +1,32 @@
+dsn: groupon_orders_production
+table_limits_dsn: table_limits
+
+hive_schema: groupon_orders_snc1
+work_dir: /var/groupon/megatron/groupon_orders_snc1
+
+megatron_runtime_loc: /user/megatron/runtime
+final_table_loc: /user/megatron/data
+
+string_shortener: abbreviate
+
+include_table:
+    - groupon_production.fulfillments:
+        string_shortener: truncate
+    - groupon_production.order_item_units:
+        string_shortener: abbreviations
+    - groupon_production.shipment_line_items:
+        string_shortener: truncate
+    - groupon_production.fulfillment_states:
+        string_shortener: truncate
+    - groupon_production.parent_orders:
+        string_shortener: abbreviations
+    - groupon_production.orders:
+        string_shortener: abbreviations
+    - groupon_production.point_transactions
+    - groupon_production.point_allocations
+
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: sandbox
+        staging_schema: dev1_staging

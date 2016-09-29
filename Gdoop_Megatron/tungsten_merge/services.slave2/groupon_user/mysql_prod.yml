@@ -1,0 +1,17 @@
+dsn: groupon_user_dsn
+
+hive_schema: groupon_user_production
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/groupon_user
+
+string_shortener: abbreviate
+
+include_table:
+    - groupon_user_production.channel_subscriptions
+
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: MEG_GRP_PROD
+        staging_schema: staging

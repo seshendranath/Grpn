@@ -1,0 +1,75 @@
+
+insert into etl_process_status 
+        (host_name, service_name, table_name, target_table_name, run_id, process_type, status, start_time, update_time, min_pkid, max_pkid, max_updated_on, max_src_pkid, src_bounded_count, dest_bounded_count, bounded_cnt_failures, window_cnt_failures, min_window_pkid, src_window_count, dest_window_count)
+    values ('pit-prod-megatron-slave2.snc1', 'voucher_txn_db', 'voucher_txn_db_voucher_txn_events', 'voucher_txn_events', 'snc1.vts_sqoop_2016-01-25-17-23-01', 'sqoop',
+            'NOT_NEEDED', now(), now(), 0, 0, '2016-01-25 16:07:41', 773911633, -1, -1, 0, 0, -1, -1, -1)
+     ON DUPLICATE KEY UPDATE status = 'NOT_NEEDED', update_time=NOW(), min_pkid=0, max_pkid=0,
+                             max_updated_on = IF ('2016-01-25 16:07:41' > max_updated_on, '2016-01-25 16:07:41', max_updated_on), max_src_pkid = 773911633, src_bounded_count = -1,
+                             dest_bounded_count = -1, bounded_cnt_failures = 0, window_cnt_failures = 0, src_window_count = -1, dest_window_count = -1, min_window_pkid = -1
+
+
+
+select service_name, run_id, start_time, TIMEDIFF(update_time, start_time) duration, substring(target_table_name, 1,32) table_name, status, process_type, min_pkid, max_pkid, max_src_pkid, src_bounded_count src_bcnt, dest_bounded_count dst_bcnt, bounded_cnt_failures bcnt_fails, min_window_pkid min_winid, src_window_count swincnt, dest_window_count dwincnt, window_cnt_failures win_fails  from etl_process_status where service_name like 'groupon_orders%' and host_name in ('pit-prod-megatron-slave1.snc1')  order by start_time desc limit 200;
+
+
+select run_id, start_time, TIMEDIFF(update_time, start_time) duration, max_updated_on, substring(target_table_name, 1,32) table_name, status, process_type, min_pkid, max_pkid, max_src_pkid, src_bounded_count src_bcnt, dest_bounded_count dst_bcnt, bounded_cnt_failures bcnt_fails, min_window_pkid min_winid, src_window_count swincnt, dest_window_count dwincnt, window_cnt_failures win_fails  from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-dev-megatron-slave1.snc1') and status = 'SUCCESS' order by start_time desc limit 100;
+
+
+select run_id, start_time, TIMEDIFF(update_time, start_time) duration, host_name, substring(target_table_name, 1,32) table_name, status, process_type, min_pkid, max_pkid, max_src_pkid, src_bounded_count src_bcnt, dest_bounded_count dst_bcnt, bounded_cnt_failures bcnt_fails, min_window_pkid min_winid, src_window_count swincnt, dest_window_count dwincnt, window_cnt_failures win_fails  from etl_process_status where service_name like 'groupon_orders%' and host_name like 'pit-prod-megatron-slave%.snc1' order by start_time desc limit 20;
+
+
+select * from megatron_tables where service_name = 'groupon_orders_snc1' and host_name in ('pit-dev-megatron-slave1.snc1');
+
+pit-dev-megatron-slave1.snc1
+
+select start_time, host_name, substring(target_table_name, 1,32) table_name, status, process_type, min_pkid, max_pkid, max_src_pkid, src_bounded_count src_bcnt, dest_bounded_count dst_bcnt, bounded_cnt_failures bcnt_fails, min_window_pkid min_winid, src_window_count swincnt, dest_window_count dwincnt, window_cnt_failures win_fails  from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-dev-megatron-slave1.snc1') order by start_time desc limit 20;
+
+
+select start_time, update_time, TIMESTAMPDIFF(MINUTE,start_time , update_time) diff, host_name, substring(target_table_name, 1,32) table_name, status, process_type   
+from etl_process_status 
+where run_id = 'lup1.orders_merge_2016-01-11-23-43-41' 
+order by start_time desc limit 100;
+
+
+/home/megatron/tungsten-utils/tungsten_merge/run_megatron.sh sqoop dev lup1.orders  > /home/megatron/logs/run_sqoop.lup1.cron.out 2>&1
+/home/megatron/tungsten-utils/tungsten_merge/run_megatron.sh merge dev lup1.orders > /home/megatron/logs/run_merge.lup1.cron.out 2>&1
+
+select count(*) from groupon_production.parent_orders WHERE id >= 2109952 AND id <= 102109952
+
+select count(*) from parent_orders where id >= 101992474 and id <= 102182682;
+select count(*) from groupon_production_parent_orders_final where id >= 101992474 and id <= 102182682;
+
+
+delete from cdc_data_partitions where service_name = 'gkb' and host_name in ('pit-dev-megatron-slave2.snc1', 'pit-prod-tungsten2.lup1');
+delete from etl_process_status where service_name = 'gkb' and host_name in ('pit-dev-megatron-slave2.snc1', 'pit-prod-tungsten2.lup1');
+delete from table_replication_status where service_name = 'gkb' and host_name in ('pit-dev-megatron-slave2.snc1', 'pit-prod-tungsten2.lup1');
+
+
+delete from cdc_data_partitions where service_name = 'accounting' and host_name in ('pit-prod-megatron-slave2.snc1');
+delete from etl_process_status where service_name = 'accounting' and host_name in ('pit-prod-megatron-slave2.snc1');
+delete from table_replication_status where service_name = 'accounting' and host_name  in ('pit-prod-megatron-slave2.snc1');
+
+
+delete from cdc_data_partitions where service_name = 'groupon_orders_snc1' ;
+delete from etl_process_status where service_name = 'groupon_orders_snc1';
+delete from table_replication_status where service_name = 'groupon_orders_snc1';
+
+select run_id, host_name, table_name, status, process_type from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-dev-megatron-slave1.snc1') and table_name = 'groupon_production_orders' order by start_time desc limit 40;
+
+select host_name, table_name, status, process_type from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-prod-megatron-slave1.snc1') and process_type='full_load' and status in ("RUNNING", "SUCCESS") order by start_time desc;
+
+select host_name, table_name, status, process_type from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-prod-megatron-slave1.snc1') order by start_time desc;
+
+
+select host_name, table_name, status, process_type from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-prod-tungsten2.lup1') and process_type='sqoop' and status in ("RUNNING", "SUCCESS") order by start_time desc;
+
+select host_name, table_name, status, process_type from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-prod-tungsten2.lup1') and process_type='full_load' and status in ("RUNNING", "SUCCESS") order by start_time desc;
+
+select host_name, table_name, status, process_type from etl_process_status where service_name = 'groupon_orders' and host_name in ('pit-prod-tungsten2.lup1') and process_type='full_load' and status in ("RUNNING", "SUCCESS") order by start_time desc;
+
+
+groupon_orders_snc1.groupon_production_shipments_final WHERE id >= 99990762 AND id <= 99997084;
+
+
+
+hadoop job -list | egrep '^job' | awk '{print $1}' | xargs -n 1 -I {} sh -c "hadoop job -status {} | egrep '^tracking' | awk '{print \$3}'" | xargs -n 1 -I{} sh -c "echo -n {} | sed 's/.*jobid=//'; echo -n ' ';curl -s -XGET {} | grep 'Job Name' | sed 's/.* //' | sed 's/<br>//'"

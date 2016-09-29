@@ -1,0 +1,9 @@
+service_name: groupon_orders
+stage_location: /user/tungsten/staging/groupon_orders
+inc_merge: True
+use_last: False
+use_all: False
+dop: 25
+load_dop: 4
+sqoop_dop: 1
+etl_status_dsn: megatron_etl_status

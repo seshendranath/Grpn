@@ -1,0 +1,10 @@
+teradata_dsn: tdwc_test
+teradata_staging_schema: sandbox
+teradata_final_schema: sandbox
+include_table: 
+  - groupon_production.fulfillment_manifests
+
+dsn: groupon_order_production
+final_table_loc: /user/tungsten/groupon_orders
+work_dir: /var/groupon/tungsten/groupon_orders
+hive_schema: groupon_orders

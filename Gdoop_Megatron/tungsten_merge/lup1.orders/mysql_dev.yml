@@ -1,0 +1,39 @@
+dsn: groupon_order_production_lup1
+
+hive_schema: groupon_orders
+
+include_table:
+    - groupon_production.delivery_orders
+    - groupon_production.gift_instructions
+    - groupon_production.orders
+    - groupon_production.order_request_details
+    - groupon_production.order_payment_transactions
+    - groupon_production.order_item_adjustments
+    - groupon_production.parent_orders
+    - groupon_production.payment_types
+    - groupon_production.order_item_units
+    - groupon_production.point_allocations
+    - groupon_production.shipping_addresses
+    - groupon_production.bucks_allocation_request_details 
+    - groupon_production.bucks_audit_records 
+    - groupon_production.bucks_payment_transactions 
+    - groupon_production.bucks_payments
+    - groupon_production.point_allocation_mirrors 
+    - groupon_production.point_allocations 
+    - groupon_production.point_transaction_mirrors 
+    - groupon_production.point_transactions
+    - groupon_production.order_request_details_raw:
+        column_overrides: {request_details: {length: 3600} }
+        table_name: order_request_details_raw
+    - groupon_production.shipping_address_billing_record_revalidation_attempts
+    - groupon_production.collection_transactions_order_payment_transactions:
+        table_name: collection_transactions_opt
+ 
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: edwdev
+        staging_schema: sandbox
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/groupon_orders

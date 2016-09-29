@@ -1,0 +1,9 @@
+service_name: killbill_latam
+stage_location: /user/tungsten/staging/killbill_latam
+inc_merge: True
+dop: 25
+load_dop: 4
+sqoop_dop: 3
+etl_status_dsn: megatron_etl_status
+table_limits_dsn: table_limits
+cluster_name: snc1

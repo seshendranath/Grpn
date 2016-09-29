@@ -1,0 +1,9 @@
+service_name: voucher_txn_db
+stage_location: /user/tungsten/staging/voucher_txn_db
+inc_merge: True
+dop: 25
+load_dop: 4
+sqoop_dop: 3
+etl_status_dsn: megatron_etl_status
+table_limits_dsn: table_limits
+cluster_name: snc1

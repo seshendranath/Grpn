@@ -1,0 +1,97 @@
+context:
+    purge_hour: 1
+    tungsten_tdwc_dsn: tungsten_tdwc
+    tungsten_tdwb_dsn: tungsten_tdwb
+
+settings:
+    replicator.etl_status_dsn: /data/unity/raw
+    replicator.hdfs_staging_loc: /user/tungsten/staging
+    replicator.hdfs_table_base_loc: /data/unity/raw
+    replicator.work_dir: /var/groupon/megatron
+    replicator.parallel_tasks: 25
+    replicator.parallel_sqoop_tasks: 1
+    replicator.parallel_td_load: 4
+    
+initialization:
+    class: ScriptTask
+    emits:
+        - hr
+        - hh
+        - ds
+        - host_name
+    configuration:
+      script: |
+             #!/bin/sh
+             ds=${1:-`date "+%Y-%m-%d"`}
+             hh=${2:-`date "+%H-%M-%S"`}
+             hr=${2:-`date "+%-H"`}
+             host_name=${3:-`hostname -f`}
+             echo "{ \"ds\" : \"$ds\", \"hh\" : \"$hh\", \"hr\" : \"$hr\", \"host_name\" : \"$host_name\" }"
+
+# REPORTING
+
+check_synchronization_status:
+  class: SQLRead
+  dependencies:
+    - initialization
+  emits:
+      - service_failure_count
+      - service_warning_count
+      - table_failure_count
+  configuration:
+    db:
+      adapter: mysql
+      dsn: ${megatron_status_dsn}
+    sql:
+        - SELECT count(*) AS service_failure_count from megatron_services WHERE host_name='${host_name}' and status like '%ERROR%';
+        - SELECT count(*) AS service_warning_count from megatron_services WHERE host_name='${host_name}' and status like '%WARNING%';
+        - SELECT count(*) AS table_failure_count from megatron_tables WHERE host_name='${host_name}' and status <> 'ONLINE';
+
+generate_report: 
+    class: SQLReport
+    dependencies:
+        - check_synchronization_status
+    emits:
+      - report_title
+      - report_body
+      - report_attachments
+    conditions:
+        - expression: (${hr} == ${megatron_summary_report_hour} or ((${table_failure_count} > 0 or ${service_failure_count} > 0) and ${hr}%4 == 0 ) or True or (${service_warning_count} > 0 and ${hr}%4 == 0))
+          description: "Report Generation Check"
+    configuration:
+        db:
+          adapter: mysql
+          dsn: ${megatron_status_dsn}
+        title: "Megatron ${host_name} Report - Success Rate: <success_percent>%"
+        table_titles:
+            - "Replication Services: <success_percent>%"
+            - "Replicated Tables: <success_percent>%"
+        sql:
+          - |
+            SELECT service_name AS `Service Name`, 
+                   service_latency AS `Latency (min)`, 
+                   status AS Status,
+                   IF(status in ('ONLINE', 'OFFLINE:NORMAL'), 0, 1) AS _failure
+            FROM megatron_services WHERE host_name='${host_name}' ORDER BY _failure DESC, host_name, service_name;
+          - |
+            SELECT service_name AS `Service Name`, table_name AS `Table Name`, consistent_as_of AS 'Consistent as of',
+                   relative_latency AS `Relative Latency`, 
+                   status AS Status, 
+                   event_time AS `Measured At`, 
+                   IF(status in ('ONLINE', 'OFFLINE:NORMAL'), 0, 1) AS _failure, 
+                   log_file AS _log_path 
+            FROM megatron_tables WHERE host_name='${host_name}' ORDER BY _failure DESC, host_name, service_name, table_name;
+
+email_report:
+    class: EmailTask
+    dependencies:
+        - generate_report
+    conditions:
+        - expression: (${hr} == ${megatron_summary_report_hour} or ((${table_failure_count} > 0 or ${service_failure_count} > 0) and ${hr}%4 == 0 ) or True or (${service_warning_count} > 0 and ${hr}%4 == 0))
+          description: "Report Generation Check"
+    configuration:
+        email_from: megatron@groupon.com
+        email_to: ${megatron_hourly_report_toaddrs}
+        subject: ${report_title}
+        html_message: ${report_body}
+

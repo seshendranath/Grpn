@@ -1,0 +1,9 @@
+service_name: getaways_content
+stage_location: /user/tungsten/staging/getaways_content
+inc_merge: True
+dop: 25
+load_dop: 4
+sqoop_dop: 1
+etl_status_dsn: megatron_etl_status
+table_limits_dsn: table_limits
+cluster_name: snc1

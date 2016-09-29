@@ -1,0 +1,53 @@
+dsn: gkb_dsn
+
+hive_schema: gkb_production
+
+include_table:
+    - gkb_production.adyen_hpp_requests
+    - gkb_production.adyen_responses
+    - gkb_production.adyen_notifications
+    - gkb_production.adyen_payment_methods
+    - gkb_production.payments
+    - gkb_production.payment_methods
+    - gkb_production.analytics_account_fields
+    - gkb_production.analytics_account_tags
+    - gkb_production.analytics_account_transitions     
+    - gkb_production.analytics_accounts                
+    - gkb_production.analytics_bundle_fields           
+    - gkb_production.analytics_bundle_tags             
+    - gkb_production.analytics_bundles                 
+    - gkb_production.analytics_currency_conversion     
+    - gkb_production.analytics_invoice_adjustments     
+    - gkb_production.analytics_invoice_credits         
+    - gkb_production.analytics_invoice_fields          
+    - gkb_production.analytics_invoice_item_adjustments:
+        table_name: a_invoice_item_adjustments
+    - gkb_production.analytics_invoice_items           
+    - gkb_production.analytics_invoice_tags            
+    - gkb_production.analytics_invoices                
+    - gkb_production.analytics_notifications           
+    - gkb_production.analytics_notifications_history:
+        table_name: a_notifications_history
+    - gkb_production.analytics_payment_auths           
+    - gkb_production.analytics_payment_captures        
+    - gkb_production.analytics_payment_chargebacks     
+    - gkb_production.analytics_payment_credits         
+    - gkb_production.analytics_payment_fields          
+    - gkb_production.analytics_payment_purchases       
+    - gkb_production.analytics_payment_refunds         
+    - gkb_production.analytics_payment_tags            
+    - gkb_production.analytics_payment_voids           
+    - gkb_production.analytics_reports                 
+    - gkb_production.analytics_subscription_transitions:
+        table_name: a_subscription_transitions
+ 
+target_database:
+    - load_tdwb:
+        dsn: tungsten_tdwb
+        schema: dwh_mart
+        staging_schema: dwh_mart_Staging
+        view_schema: dwh_mart_view
+        prefix: kbe_
+
+final_table_loc: /user/megatron/data 
+work_dir: /var/groupon/megatron/gkb

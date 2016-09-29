@@ -1,0 +1,77 @@
+context:
+    hour: 1
+    long_hour: 3
+    megatron_etl_dsn: megatron_etl_status
+
+check_status:
+  class: SQLRead
+  emits:
+      - long_running_job_count
+  configuration:
+    db:
+      adapter: mysql
+      dsn: ${megatron_etl_dsn}
+    sql:
+        - SELECT count(*) AS long_running_job_count from etl_process_status where status='RUNNING' and time_to_sec(timediff(now(),start_time))/3600 > ${hour};
+
+generate_report:
+    class: SQLReport
+    dependencies:
+      - check_status
+    emits:
+      - report_title
+      - report_body
+      - report_attachments
+    conditions:
+      - expression: ${long_running_job_count} > 0
+        description: "Report Generation Check"
+    configuration:
+        db:
+          adapter: mysql
+          dsn: ${megatron_etl_dsn}
+        title: "Megatron jobs RUNNING more than ${hour} Hour"
+        table_titles:
+            - "Table Info"
+        sql:
+          - |
+             select host_name,service_name,run_id, table_name, time_to_sec(timediff(now(),start_time))/3600 as time_took from etl_process_status where status='RUNNING' and time_to_sec(timediff(now(),start_time))/3600 > ${hour};
+
+email_report:
+    class: EmailTask
+    dependencies:
+        - generate_report
+    conditions:
+      - expression: ${long_running_job_count} > 0
+        description: "Report Generation Check"
+    configuration:
+        email_from: megatron@groupon.com
+        email_to: megatron@groupon.pagerduty.com,aguyyala@groupon.com,svadlamudi@groupon.com
+        subject: ${report_title}
+        html_message: ${report_body}
+
+check_long_status:
+  class: SQLRead
+  dependencies:
+        - email_report
+  emits:
+      - long_hour_running_job_count
+  configuration:
+    db:
+      adapter: mysql
+      dsn: ${megatron_etl_dsn}
+    sql:
+        - SELECT count(*) AS long_hour_running_job_count from etl_process_status where status='RUNNING' and time_to_sec(timediff(now(),start_time))/3600 > ${long_hour};
+
+update_long_status:
+  class: SQLExecute
+  dependencies:
+        - check_long_status
+  conditions:
+      - expression: ${long_hour_running_job_count} > 0
+        description: "Update status Check"
+  configuration:
+    db:
+      adapter: mysql
+      dsn: ${megatron_etl_dsn}
+    sql:
+        - update etl_process_status set status='FAILED' where status='RUNNING' and time_to_sec(timediff(now(),start_time))/3600 > ${long_hour};

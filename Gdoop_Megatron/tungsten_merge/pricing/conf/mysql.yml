@@ -1,0 +1,9 @@
+teradata_dsn: tdwc_test
+teradata_staging_schema: sandbox
+teradata_final_schema: sandbox
+min_part: "ds=2014-08-10/hr=01"
+
+dsn: pricing_service
+final_table_loc: /user/tungsten/pricing_service
+work_dir: /var/groupon/tungsten/pricing_service
+hive_schema: pricing_service

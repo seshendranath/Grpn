@@ -1,0 +1,17 @@
+dsn: groupon_order_production_lup1
+
+hive_schema: dse_sandbox
+
+include_table:
+    - groupon_production.order_item_adjustments
+ 
+target_database:
+    - orders_tdwc:
+        dsn: tungsten_tdwc
+        schema: sandbox
+    - orders_tdwb:
+        dsn: tungsten_tdwb
+        schema: sandbox
+
+final_table_loc: /user/tungsten/groupon_orders
+work_dir: /var/groupon/tungsten/groupon_orders

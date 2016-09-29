@@ -1,0 +1,8 @@
+service_name: getaways_inventory
+stage_location: /user/tungsten/staging/getaways_inventory
+dop: 25
+load_dop: 4
+sqoop_dop: 1
+etl_status_dsn: megatron_etl_status
+table_limits_dsn: table_limits
+cluster_name: snc1

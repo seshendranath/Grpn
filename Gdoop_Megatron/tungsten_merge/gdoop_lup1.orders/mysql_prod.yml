@@ -1,0 +1,11 @@
+dsn: groupon_order_production_lup1
+table_limits_dsn: table_limits
+data_src_platform: NA
+hive_schema: meg_groupon_orders
+
+final_table_loc: /user/grp_gdoop_edw_meg_prod/data
+work_dir: /var/groupon/tung/megatron/groupon_orders
+
+include_table:
+    - groupon_production.orders
+    - groupon_production.parent_orders

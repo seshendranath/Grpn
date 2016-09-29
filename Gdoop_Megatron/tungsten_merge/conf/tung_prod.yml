@@ -1,0 +1,10 @@
+service_name: groupon
+stage_location: /user/tungsten/staging/groupon
+inc_merge: True
+use_last: False
+use_all: False
+dop: 25
+load_dop: 4
+sqoop_dop: 2
+
+   

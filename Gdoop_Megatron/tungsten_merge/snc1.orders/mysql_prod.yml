@@ -1,0 +1,73 @@
+dsn: groupon_orders_production
+table_limits_dsn: table_limits
+
+hive_schema: groupon_orders_snc1
+
+final_table_loc: /data/unity/raw
+work_dir: /var/groupon/megatron/groupon_orders_snc1
+
+string_shortener: abbreviate
+
+include_table:
+    - groupon_production.campaign_membership_coupons:
+        string_shortener: truncate
+    - groupon_production.fulfillments:
+        string_shortener: truncate
+    - groupon_production.fulfillment_line_items:
+        string_shortener: truncate
+    - groupon_production.fulfillment_states:
+        string_shortener: truncate
+    - groupon_production.order_discount_versions:
+        string_shortener: truncate
+    - groupon_production.order_discounts:
+        string_shortener: truncate
+    - groupon_production.order_request_details:
+        string_shortener: truncate
+    - groupon_production.order_shipping_cost_versions:
+        string_shortener: truncate
+    - groupon_production.shipments:
+        string_shortener: truncate
+    - groupon_production.shipment_line_items:
+        string_shortener: truncate
+    - groupon_production.tax_documents:
+        string_shortener: truncate
+    - groupon_production.user_billing_transactions:
+        string_shortener: truncate
+    - groupon_production.collection_transactions:
+        string_shortener: abbreviations
+    - groupon_production.orders:
+        string_shortener: abbreviations
+    - groupon_production.order_events:
+        string_shortener: abbreviations
+    - groupon_production.order_item_adjustments:
+        string_shortener: abbreviations
+    - groupon_production.order_item_events:
+        string_shortener: abbreviations
+    - groupon_production.order_item_units:
+        string_shortener: abbreviations
+    - groupon_production.order_item_unit_events:
+        string_shortener: abbreviations
+    - groupon_production.order_payment_transactions:
+        string_shortener: abbreviations
+    - groupon_production.parent_orders:
+        string_shortener: abbreviations
+    - groupon_production.bucks_allocation_request_details
+    - groupon_production.bucks_audit_records
+    - groupon_production.bucks_payment_transactions
+    - groupon_production.bucks_payments
+    - groupon_production.order_item_adjustment_events
+    - groupon_production.order_request_details_raw:
+        column_overrides: {request_details: {length: 7200} }
+    - groupon_production.adjustment_sources
+    - groupon_production.collection_transactions_order_payment_transactions:
+        table_name: collection_transactions_opt
+    - groupon_production.point_transactions
+    - groupon_production.point_allocations
+    - groupon_production.deal_option_tax_attributes
+
+target_database:
+    - load_tdwc:
+        dsn: tungsten_tdwc
+        schema: MEG_GRP_PROD
+        staging_schema: staging
+
