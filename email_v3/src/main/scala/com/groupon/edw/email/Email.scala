@@ -39,8 +39,9 @@ object Email {
       .enableHiveSupport()
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .config("spark.dynamicAllocation.enabled", "False")
-      .config("spark.sql.shuffle.partitions", 1024)
       .getOrCreate()
+
+    // .config("spark.sql.shuffle.partitions", 1024)
   }
 
 }

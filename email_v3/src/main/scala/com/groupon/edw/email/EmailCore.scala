@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.{FileContext, FileSystem, Path}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 import org.joda.time.Days
 import scala.annotation.tailrec
@@ -78,7 +78,11 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("Merging with agg email")
       val aggEmail = mergeAggEmail(batchStartDate, batchEndDate, offset)
       log.info("Saving the merged data to temp location")
-      saveDataFrameToHdfs(aggEmail.coalesce(outputNumFiles), tmpLocation, targetInputFormat, finalPartCol)
+
+      val fCol: Column = outNoFilesPerCountry.keys.toList.foldLeft(lit(2))((acc, c) =>
+        when($"${finalPartCol(1)}" === c, lit(outNoFilesPerCountry(c))).otherwise(acc))
+      val aggEmailRePart = aggEmail.repartition(finalPartCol.map(c => col(c)) :+ fCol: _*)
+      saveDataFrameToHdfs(aggEmailRePart, tmpLocation, targetInputFormat, finalPartCol)
 
       log.info("Moving data to final location from temp location")
       moveStageToTargetHdfs()
