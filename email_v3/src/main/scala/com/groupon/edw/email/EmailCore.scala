@@ -70,7 +70,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       moveStageToTargetHdfs()
 
       log.info("Checking for DDL changes and Table Existence")
-      var cols = mutable.ArrayBuffer[(String, String)]()
+      val cols = mutable.ArrayBuffer[(String, String)]()
       for (column <- aggEmail.dtypes) {
         val (col, dataType) = column
         if (!(finalPartCol contains col)) {
@@ -127,13 +127,13 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
         .groupBy { case (size, date) => date }.mapValues(x => x.map { case (size, date) => size }.sum)
         .filter((x) => x._2 > sizeThresholds(event))
 
-      val datesOnly = datesToProcess.keys.map(_.get).toList
+      val datesOnly = datesToProcess.keys.map(_.getOrElse(None).toString).toList
 
-      val filesToProcess = allFiles.filter { fs => datesOnly.contains(raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(fs.getPath.toString).get)
+      val filesToProcess = allFiles.filter { fs => datesOnly.contains(raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(fs.getPath.toString).getOrElse(None))
       }.map(fs => fs.getPath.toString)
 
       for (f <- filesToProcess) {
-        val dt = raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(f).get
+        val dt = raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(f).getOrElse(None).toString
 
         if (eventDatesFilesMap contains ((event, dt))) {
           eventDatesFilesMap((event, dt)) = eventDatesFilesMap((event, dt)) ::: List(f)
@@ -207,9 +207,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       s"""
          | SELECT
          |      emailSendId
-         |     ,SHA2(CONCAT('$emailSalt', d.emailReceiverAddress), 256) AS emailHash
+         |     ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
          |     ,country
-         |     ,MIN(from_unixtime(CAST(substr(d.eventTime,1,10) AS INT),'yyyy-MM-dd HH:mm:ss')) AS event_time
+         |     ,MIN(from_unixtime(CAST(substr(eventTime,1,10) AS INT),'yyyy-MM-dd HH:mm:ss')) AS event_time
          |     ,MIN(event_date) AS event_date
          |     ,MIN(emailName) AS emailName
          | FROM delivery
@@ -232,7 +232,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,MIN(event_date) AS event_date
          |     ,MIN(userAgent) AS userAgent
          | FROM click
-         | WHERE event="$eventsMapInverse("open")"
+         | WHERE event="${eventsMapInverse("open")}"
          | GROUP BY 1,2,3
       """.stripMargin
 
@@ -253,7 +253,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,MIN(userAgent) AS userAgent
          |     ,MIN(CASE WHEN clickDestination LIKE '%unsub%' THEN event_date ELSE $defaultDate END) AS unsub_date
          | FROM click
-         | WHERE event="$eventsMapInverse("click")"
+         | WHERE event="${eventsMapInverse("click")}"
          | GROUP BY 1,2,3
       """.stripMargin
 
@@ -288,16 +288,16 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     log.info("EmailBounceStageTemp:" + qry)
 
     qry =
-      s"""
+      """
          | SELECT
          |       emailSendId
          |      ,emailHash
          |      ,country
-         |      ,MIN(CASE WHEN b.email_bounce_type_id=4 THEN b.event_date ELSE NULL END) AS complaint_date
-         |      ,MIN(CASE WHEN b.email_bounce_type_id IN (1,2) THEN b.event_date ELSE NULL END) AS softbounce_date
-         |      ,MIN(CASE WHEN b.email_bounce_type_id=3 THEN b.event_date ELSE NULL END) AS hardbounce_date
+         |      ,MIN(CASE WHEN email_bounce_type_id=4 THEN event_date ELSE NULL END) AS complaint_date
+         |      ,MIN(CASE WHEN email_bounce_type_id IN (1,2) THEN event_date ELSE NULL END) AS softbounce_date
+         |      ,MIN(CASE WHEN email_bounce_type_id=3 THEN event_date ELSE NULL END) AS hardbounce_date
          |      ,MIN(event_date) AS event_date
-         | FROM bounce
+         | FROM stg_email_bounce_temp
          | GROUP BY 1,2,3,4
       """.stripMargin
 
@@ -463,7 +463,7 @@ object EmailCore {
       }
 
     }
-    loop(Nil, dts.head, dts.head, dts.tail)
+    loop(Nil, dts.take(1)(0), dts.take(1)(0), dts.tail)
 
   }
 
