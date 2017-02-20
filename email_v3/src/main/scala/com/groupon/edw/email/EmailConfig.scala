@@ -79,10 +79,10 @@ object EmailConfig {
   val eventsMap: Map[String, String] = Map("emailDelivery" -> "delivery", "emailSend" -> "send",
     "emailOpenHeader" -> "open", "emailClick" -> "click", "emailBounce" -> "bounce")
 
-  val targetLocation = "/user/grp_gdoop_edw_dev_etl/email/res"
+  val targetLocation = "/user/grp_gdoop_edw_etl_dev/email/res"
 
-  val sizeThresholds = Map("emailDelivery" -> 1073741824L, "emailSend" -> 1073741824L, "emailBounce" -> 536870912L,
-    "emailOpenHeader" -> 107374182L, "emailClick" -> 107374182L)
+  val sizeThresholds = Map("emailDelivery" -> 107374182L, "emailSend" -> 107374182L, "emailBounce" -> 53687091L,
+    "emailOpenHeader" -> 10737418L, "emailClick" -> 10737418L)
 
   val outputNumFiles = 200
 

@@ -42,7 +42,13 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     val (startDt, endDt) = getStartEndTimeStamp(startTimeStamp, endTimeStamp)
     val (eventDatesMap, eventDatesFilesMap) = extractDatesAndFilesToProcess(startDt, endDt)
 
+    log.info(s"EventDatesMap $eventDatesMap")
     val dts = eventDatesMap.values.toList.flatMap(x => x).distinct.sortWith(_ < _).map(x => DateTime.parse(x))
+    if (dts.isEmpty) {
+      log.info("No Dates to Process. Either the threshold is too high or the Upstream didn't write any files")
+      System.exit(1)
+    }
+
     val batches = prepareBatch(dts, batchSize, intervalSize)
 
 
@@ -127,13 +133,13 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
         .groupBy { case (size, date) => date }.mapValues(x => x.map { case (size, date) => size }.sum)
         .filter((x) => x._2 > sizeThresholds(event))
 
-      val datesOnly = datesToProcess.keys.map(_.getOrElse(None).toString).toList
+      val datesOnly = datesToProcess.keys.flatten.toList
 
-      val filesToProcess = allFiles.filter { fs => datesOnly.contains(raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(fs.getPath.toString).getOrElse(None))
+      val filesToProcess = allFiles.filter { fs => datesOnly.contains(raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(fs.getPath.toString).getOrElse("None"))
       }.map(fs => fs.getPath.toString)
 
       for (f <- filesToProcess) {
-        val dt = raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(f).getOrElse(None).toString
+        val dt = raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(f).getOrElse("None")
 
         if (eventDatesFilesMap contains ((event, dt))) {
           eventDatesFilesMap((event, dt)) = eventDatesFilesMap((event, dt)) ::: List(f)
@@ -160,12 +166,12 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
   def aggEmailAddHivePartitions(dates: List[DateTime], countries: List[String]) = {
 
-    val parts = mutable.ListBuffer[List[String]]()
+    val parts = mutable.ListBuffer[(List[String], String)]()
     for (date <- dates; country <- countries) {
       val loc = targetLocation + "/" + finalPartCol(0) + "=" + date.toString(yyyy_MM_dd) + "/" + finalPartCol(1) + "=" + country
       val path = new Path(loc)
       if (dfc.util.exists(path)) {
-        parts += List(date.toString(yyyy_MM_dd), country)
+        parts += ((List(date.toString(yyyy_MM_dd), country), loc))
       }
     }
     log.info("Adding Partitions to the Table")
@@ -298,7 +304,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |      ,MIN(CASE WHEN email_bounce_type_id=3 THEN event_date ELSE NULL END) AS hardbounce_date
          |      ,MIN(event_date) AS event_date
          | FROM stg_email_bounce_temp
-         | GROUP BY 1,2,3,4
+         | GROUP BY 1,2,3
       """.stripMargin
 
 
@@ -400,7 +406,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |          ,COALESCE(f.send_id, s.send_id) AS send_id
          |          ,COALESCE(f.emailHash, s.emailHash) AS emailHash
          |          ,COALESCE(f.country_code, s.country_code) AS country_code
-         |          ,LEAST(f.send_date, s.send_date, $defaultDate) AS send_date
+         |          ,LEAST(f.send_date, s.send_date, '$defaultDate') AS send_date
          |          ,LEAST(f.send_timestamp, s.send_timestamp) AS send_timestamp
          |          ,COALESCE(f.email_name, s.email_name) AS email_name
          |          ,COALESCE(f.email_subject, s.email_subject) AS email_subject
@@ -420,11 +426,11 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |            SELECT *
          |            FROM $targetDb.$targetTable
          |            WHERE (${finalPartCol(0)} BETWEEN '${startDate.minusDays(offset).toString(yyyy_MM_dd)}' AND '${endDate.toString(yyyy_MM_dd)}'
-         |                    OR ${finalPartCol(0)} = $defaultDate)
+         |                    OR ${finalPartCol(0)} = '$defaultDate')
          |                  AND ${finalPartCol(0)} IN (${seqToQuotedString(countries)})
          |          ) f
          |      FULL OUTER JOIN stg_agg_email s
-         |      ON s.emailSendId = f.emailSendId  AND s.emailHash = f.emailHash AND s.country = f.country
+         |      ON s.send_id = f.send_id  AND s.emailHash = f.emailHash AND s.country_code = f.country_code
          |    ) a
       """.stripMargin
 
@@ -463,7 +469,7 @@ object EmailCore {
       }
 
     }
-    loop(Nil, dts.take(1)(0), dts.take(1)(0), dts.tail)
+    loop(Nil, dts.head, dts.head, dts.tail)
 
   }
 

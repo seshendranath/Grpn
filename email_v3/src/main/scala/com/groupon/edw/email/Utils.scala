@@ -5,6 +5,7 @@ package com.groupon.edw.email
   */
 
 import com.github.nscala_time.time.Imports._
+import org.apache.hadoop.fs.Options.Rename
 import org.apache.hadoop.fs.{FileContext, FileSystem, Path}
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
 import org.apache.log4j.{Level, Logger}
@@ -14,7 +15,7 @@ import org.apache.hadoop.hive.metastore.api._
 import org.apache.hadoop.hive.metastore.TableType
 
 import scala.collection.mutable
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 
 object Utils {
@@ -47,8 +48,8 @@ object Utils {
   }
 
   def getStartEndTimeStamp(startTimeStamp: Option[String], endTimeStamp: Option[String]): (DateTime, DateTime) = {
-    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.get) else DateTime.now - 1.day
-    val endDt = if (endTimeStamp.isDefined) DateTime.parse(endTimeStamp.get) else DateTime.now
+    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None")) else DateTime.now - 6.hours
+    val endDt = if (endTimeStamp.isDefined) DateTime.parse(endTimeStamp.getOrElse("None")) else DateTime.now
     (startDt, endDt)
 
   }
@@ -67,18 +68,19 @@ object Utils {
   }
 
   def saveDataFrameToHdfs(df: DataFrame, path: String, format: String, partCols: Array[String]) = {
-
+    log.info(s"Writing DataFrame to $path")
     df.write.mode(Overwrite).format(format).partitionBy(partCols: _*).save(path)
   }
 
   def hdfsRemoveAndMove(dfs: FileSystem, dfc: FileContext, srcPath: String, tgtPath: String): Unit = {
     if (dfs.exists(new Path(tgtPath))) dfc.delete(new Path(tgtPath), true)
+    dfs.mkdirs(new Path(tgtPath))
     hdfsMove(dfc, srcPath, tgtPath)
   }
 
   def hdfsMove(dfc: FileContext, srcPath: String, tgtPath: String): Unit = {
     log.info(s"Moving $srcPath to $tgtPath")
-    dfc.rename(new Path(srcPath), new Path(tgtPath))
+    dfc.rename(new Path(srcPath), new Path(tgtPath), Rename.OVERWRITE)
   }
 
   def constructHiveColString(df: DataFrame, excludeCol: Seq[String]): String = {
@@ -111,7 +113,7 @@ object Utils {
         val (c, dataType) = col
         tblCols += List(new FieldSchema(c, dataType, c))
       }
-      sd.setCols(tblCols.toList.flatMap(x => x))
+      sd.setCols(tblCols.toList.flatMap(x => x).asJava)
 
       sd.setLocation(location)
 
@@ -123,12 +125,12 @@ object Utils {
       for (col <- partCols) {
         tblPartCols += List(new FieldSchema(col, "string", col))
       }
-      t.setPartitionKeys(tblPartCols.toList.flatMap(x => x))
+      t.setPartitionKeys(tblPartCols.toList.flatMap(x => x).asJava)
 
       t.setTableType(TableType.EXTERNAL_TABLE.toString)
       t.setDbName(dbName)
       t.setTableName(tblName)
-      t.setParameters(Map("EXTERNAL" -> "TRUE", "tableType" -> "EXTERNAL_TABLE"))
+      t.setParameters(Map("EXTERNAL" -> "TRUE", "tableType" -> "EXTERNAL_TABLE").asJava)
 
       hiveMetaStore.createTable(t)
 
@@ -140,38 +142,40 @@ object Utils {
                partCols: Seq[String]): Boolean = {
 
     val tbl = hiveMetaStore.getTable(dbName, tblName)
-    val hiveCols = tbl.getSd.getCols.map(x => (x.getName, x.getType)).toArray
-    val hivePartCols = tbl.getPartitionKeys.map(x => (x.getName, x.getType)).toArray
+    val hiveCols = tbl.getSd.getCols.asScala.map(x => (x.getName, x.getType)).toArray
+    val hivePartCols = tbl.getPartitionKeys.asScala.map(x => (x.getName, x.getType)).toArray
     (cols.map(x => (x._1.toLowerCase, x._2.toLowerCase)) ++ partCols.map(x => (x, "string"))).toArray.deep == (hiveCols ++ hivePartCols).deep
 
   }
 
-  def addHivePartitions(hiveMetaStore: HiveMetaStoreClient, dbName: String, tblName: String, parts: List[List[String]]) = {
+  def addHivePartitions(hiveMetaStore: HiveMetaStoreClient, dbName: String, tblName: String, parts: List[(List[String], String)]) = {
 
     val table = hiveMetaStore.getTable(dbName, tblName)
     val partitions = for (part <- parts) yield {
+      val (p, loc) = part
       val partition = new Partition()
       partition.setDbName(dbName)
       partition.setTableName(tblName)
       val sd = new StorageDescriptor(table.getSd)
-      sd.setLocation(null)
+      sd.setLocation(loc)
       partition.setSd(sd)
-      partition.setValues(part)
+      partition.setValues(p.asJava)
       partition
     }
-    hiveMetaStore.add_partitions(partitions, true, true)
+    hiveMetaStore.add_partitions(partitions.asJava, true, true)
   }
 
-  def addHivePartition(hiveMetaStore: HiveMetaStoreClient, dbName: String, tblName: String, part: List[String]) = {
+  def addHivePartition(hiveMetaStore: HiveMetaStoreClient, dbName: String, tblName: String, part: (List[String], String)) = {
 
     val table = hiveMetaStore.getTable(dbName, tblName)
+    val (p, loc) = part
     val partition = new Partition()
     partition.setDbName(dbName)
     partition.setTableName(tblName)
     val sd = new StorageDescriptor(table.getSd)
-    sd.setLocation(null)
+    sd.setLocation(loc)
     partition.setSd(sd)
-    partition.setValues(part)
+    partition.setValues(p.asJava)
 
     hiveMetaStore.add_partition(partition)
   }
