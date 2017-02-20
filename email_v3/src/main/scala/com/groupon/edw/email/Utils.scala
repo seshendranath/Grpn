@@ -72,6 +72,11 @@ object Utils {
     df.write.mode(Overwrite).format(format).partitionBy(partCols: _*).save(path)
   }
 
+  def saveDataFrameToHdfs(df: DataFrame, path: String, format: String) = {
+    log.info(s"Writing DataFrame to $path")
+    df.write.mode(Overwrite).format(format).save(path)
+  }
+
   def hdfsRemoveAndMove(dfs: FileSystem, dfc: FileContext, srcPath: String, tgtPath: String): Unit = {
     if (dfs.exists(new Path(tgtPath))) dfc.delete(new Path(tgtPath), true)
     dfs.mkdirs(new Path(tgtPath))
@@ -147,6 +152,7 @@ object Utils {
     (cols.map(x => (x._1.toLowerCase, x._2.toLowerCase)) ++ partCols.map(x => (x, "string"))).toArray.deep == (hiveCols ++ hivePartCols).deep
 
   }
+
 
   def addHivePartitions(hiveMetaStore: HiveMetaStoreClient, dbName: String, tblName: String, parts: List[(List[String], String)]) = {
 

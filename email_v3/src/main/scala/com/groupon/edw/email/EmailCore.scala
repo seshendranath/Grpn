@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.{FileContext, FileSystem, Path}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 import org.joda.time.Days
 import scala.annotation.tailrec
@@ -67,22 +67,24 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       createStageTables()
       log.info("Stage tables are created")
 
+      log.info("Creating stage tables for Agg Email")
+      val stgAggEmail = createAggEmailStage()
+      saveDataFrameToHdfs(stgAggEmail.coalesce(outputNumFiles), stgLocation, targetInputFormat)
+
+      log.info("Checking for DDL changes and Staging Table Existence")
+      val stgCols = getColsFromDF(stgAggEmail, Array[String]())
+      checkAndCreateHiveDDL(hiveMetaStore, targetDb, stgTable, targetInputFormat, stgLocation, stgCols, Array[String]())
+
       log.info("Merging with agg email")
       val aggEmail = mergeAggEmail(batchStartDate, batchEndDate, offset)
       log.info("Saving the merged data to temp location")
-      saveDataFrameToHdfs(aggEmail, tmpLocation, targetInputFormat, finalPartCol)
+      saveDataFrameToHdfs(aggEmail.coalesce(outputNumFiles), tmpLocation, targetInputFormat, finalPartCol)
 
       log.info("Moving data to final location from temp location")
       moveStageToTargetHdfs()
 
       log.info("Checking for DDL changes and Table Existence")
-      val cols = mutable.ArrayBuffer[(String, String)]()
-      for (column <- aggEmail.dtypes) {
-        val (col, dataType) = column
-        if (!(finalPartCol contains col)) {
-          cols += ((col, sparkToHiveDataType(dataType)))
-        }
-      }
+      val cols = getColsFromDF(aggEmail, finalPartCol)
       checkAndCreateHiveDDL(hiveMetaStore, targetDb, targetTable, targetInputFormat, targetLocation, cols, finalPartCol)
 
       log.info("Adding partitions to hive metastore")
@@ -155,6 +157,18 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     (eventDatesMap, eventDatesFilesMap)
   }
 
+  def getColsFromDF(df: DataFrame, exclude: Seq[String]) = {
+    log.info("Extracting Column Info from DataFrame")
+    val cols = mutable.ArrayBuffer[(String, String)]()
+    for (column <- df.dtypes) {
+      val (col, dataType) = column
+      if (!(exclude contains col)) {
+        cols += ((col, sparkToHiveDataType(dataType)))
+      }
+    }
+    cols
+  }
+
   def moveStageToTargetHdfs() = {
     val tmpDirs = dfs.globStatus(new Path(tmpLocation + "/*" * finalPartCol.length)).map(fs => fs.getPath.toString)
     for (i <- tmpDirs) {
@@ -184,7 +198,6 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     createEmailOpenStage()
     createEmailClickStage()
     createEmailBounceStage()
-    createAggEmailStage()
   }
 
 
@@ -295,16 +308,16 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     qry =
       """
-         | SELECT
-         |       emailSendId
-         |      ,emailHash
-         |      ,country
-         |      ,MIN(CASE WHEN email_bounce_type_id=4 THEN event_date ELSE NULL END) AS complaint_date
-         |      ,MIN(CASE WHEN email_bounce_type_id IN (1,2) THEN event_date ELSE NULL END) AS softbounce_date
-         |      ,MIN(CASE WHEN email_bounce_type_id=3 THEN event_date ELSE NULL END) AS hardbounce_date
-         |      ,MIN(event_date) AS event_date
-         | FROM stg_email_bounce_temp
-         | GROUP BY 1,2,3
+        | SELECT
+        |       emailSendId
+        |      ,emailHash
+        |      ,country
+        |      ,MIN(CASE WHEN email_bounce_type_id=4 THEN event_date ELSE NULL END) AS complaint_date
+        |      ,MIN(CASE WHEN email_bounce_type_id IN (1,2) THEN event_date ELSE NULL END) AS softbounce_date
+        |      ,MIN(CASE WHEN email_bounce_type_id=3 THEN event_date ELSE NULL END) AS hardbounce_date
+        |      ,MIN(event_date) AS event_date
+        | FROM stg_email_bounce_temp
+        | GROUP BY 1,2,3
       """.stripMargin
 
 
@@ -313,7 +326,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     log.info("EmailBounceStage:" + qry)
   }
 
-  def createAggEmailStage() = {
+  def createAggEmailStage(): DataFrame = {
     val qry =
       s"""
          | SELECT
@@ -359,8 +372,10 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       """.stripMargin
 
     val stgAggEmailDF = sql(qry)
+    stgAggEmailDF.cache()
     stgAggEmailDF.createTempView("stg_agg_email")
     log.info("AggEmailStage:" + qry)
+    stgAggEmailDF
 
   }
 

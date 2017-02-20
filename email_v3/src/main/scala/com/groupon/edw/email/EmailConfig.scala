@@ -40,6 +40,7 @@ object EmailConfig {
                     sourceTable: String = "junohourly",
                     targetDb: String = "svc_edw_dev_db",
                     targetTable: String = "agg_email",
+                    stgTable: String = "agg_email_stg",
                     startTimeStamp: Option[String] = None,
                     endTimeStamp: Option[String] = None,
                     countries: Seq[String] = countries,
@@ -57,7 +58,7 @@ object EmailConfig {
                     finalPartCol: Array[String] = Array("send_date", "country_code"),
                     tmpString: String = tmpString,
                     stgString: String = stgString,
-                    stageLocation: String = targetLocation + stgString,
+                    stgLocation: String = targetLocation + stgString,
                     tmpLocation: String = targetLocation + tmpString,
                     emailSalt: String = "ph5p6uTezuwr4c8aprux",
                     defaultNumCountries: Int = countries.length,
@@ -68,7 +69,8 @@ object EmailConfig {
                     batchSize: Int = 7,
                     intervalSize: Int = 7,
                     dimUserTbl: String = "prod_groupondw.gbl_dim_user_uniq",
-                    defaultDate: String = "9999-12-31"
+                    defaultDate: String = "9999-12-31",
+                    outputNumFiles: Int = outputNumFiles
                    )
 
 
