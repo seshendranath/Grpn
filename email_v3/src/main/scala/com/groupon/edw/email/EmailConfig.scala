@@ -66,11 +66,12 @@ object EmailConfig {
                     appLogLevel: String = "Info",
                     sizeThresholds: Map[String, Long] = sizeThresholds,
                     dtPattern: String = "????-??-??",
-                    batchSize: Int = 7,
-                    intervalSize: Int = 7,
+                    batchSize: Int = 9,
+                    intervalSize: Int = 8,
                     dimUserTbl: String = "prod_groupondw.gbl_dim_user_uniq",
                     defaultDate: String = "9999-12-31",
-                    outputNumFiles: Int = outputNumFiles,
+                    stgOutputNumFiles: Int = 50,
+                    outputNumFiles: Int = 50,
                     outNoFilesPerCountry: Map[String, Int] = outNoFilesPerCountry
                    )
 
@@ -87,12 +88,11 @@ object EmailConfig {
   val sizeThresholds = Map("emailDelivery" -> 107374182L, "emailSend" -> 107374182L, "emailBounce" -> 53687091L,
     "emailOpenHeader" -> 10737418L, "emailClick" -> 10737418L)
 
-  val outputNumFiles = 20
 
   val tmpString: String = "_tmp"
   val stgString: String = "_stg"
 
-  val outNoFilesPerCountry = Map("AE" -> 1, "AU" -> 2, "BE" -> 2, "CA" -> 1, "DE" -> 4, "ES" -> 3, "FR" -> 8, "IE" -> 1,
-    "IT" -> 7, "JP" -> 4, "NL" -> 2, "NZ" -> 1, "PL" -> 2, "UK" -> 15, "US" -> 50)
+  val outNoFilesPerCountry = Map("AE" -> 1, "AU" -> 2, "BE" -> 2, "CA" -> 1, "DE" -> 5, "ES" -> 4, "FR" -> 7, "IE" -> 1,
+    "IT" -> 10, "JP" -> 3, "NL" -> 2, "NZ" -> 1, "PL" -> 2, "UK" -> 40, "US" -> 60)
 
 }

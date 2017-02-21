@@ -48,7 +48,7 @@ object Utils {
   }
 
   def getStartEndTimeStamp(startTimeStamp: Option[String], endTimeStamp: Option[String]): (DateTime, DateTime) = {
-    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None")) else DateTime.now - 12.hours
+    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None")) else DateTime.now - 1.day
     val endDt = if (endTimeStamp.isDefined) DateTime.parse(endTimeStamp.getOrElse("None")) else DateTime.now
     (startDt, endDt)
 

@@ -6,16 +6,16 @@ package com.groupon.edw.email
 
 
 import com.github.nscala_time.time.Imports._
-import org.apache.hadoop.fs.{FileContext, FileSystem, Path}
+import org.apache.hadoop.fs.{FileContext, FileStatus, FileSystem, Path}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 import org.joda.time.Days
+
 import scala.annotation.tailrec
 import scala.collection.mutable
-
 import EmailCore._
 import Utils._
 
@@ -23,7 +23,6 @@ import Utils._
 class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
   import emailConfig._
-  import spark.implicits._
 
   val log = Logger.getLogger(getClass)
   log.setLevel(Level.toLevel(appLogLevel))
@@ -40,10 +39,10 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     log.info("Kicked Off")
     val (startDt, endDt) = getStartEndTimeStamp(startTimeStamp, endTimeStamp)
-    val (eventDatesMap, eventDatesFilesMap) = extractDatesAndFilesToProcess(startDt, endDt)
+    val eventDateFilesMap = extractDatesAndFilesToProcess(startDt, endDt)
+    log.info(s"EventDatesMap ${eventDateFilesMap.mapValues(_.keys)}")
+    val dts = eventDateFilesMap.values.flatMap(_.keys).toSet.map((dt: String) => DateTime.parse(dt)).toSeq
 
-    log.info(s"EventDatesMap $eventDatesMap")
-    val dts = eventDatesMap.values.toList.flatMap(x => x).distinct.sortWith(_ < _).map(x => DateTime.parse(x))
     if (dts.isEmpty) {
       log.info("No Dates to Process. Either the threshold is too high or the Upstream didn't write any files")
       System.exit(1)
@@ -58,7 +57,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       for (event <- events) {
 
         log.info("Getting source files for *** " + event)
-        val files = getFiles(event, eventDatesMap(event), batchStartDate, batchEndDate, eventDatesFilesMap)
+        val files = getFiles(batchStartDate, batchEndDate, eventDateFilesMap(event))
         createDF(event, sourceInputFormat, files)
         log.info("=" * 200)
       }
@@ -69,7 +68,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
       log.info("Creating stage tables for Agg Email")
       val stgAggEmail = createAggEmailStage()
-      saveDataFrameToHdfs(stgAggEmail.coalesce(outputNumFiles), stgLocation, targetInputFormat)
+      saveDataFrameToHdfs(stgAggEmail.coalesce(stgOutputNumFiles), stgLocation, targetInputFormat)
 
       log.info("Checking for DDL changes and Staging Table Existence")
       val stgCols = getColsFromDF(stgAggEmail, Array[String]())
@@ -79,8 +78,8 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       val aggEmail = mergeAggEmail(batchStartDate, batchEndDate, offset)
       log.info("Saving the merged data to temp location")
 
-      val fCol: Column = outNoFilesPerCountry.keys.toList.foldLeft(lit(2))((acc, c) =>
-        when($"${finalPartCol(1)}" === c, lit(outNoFilesPerCountry(c))).otherwise(acc))
+      val fCol: Column = expr("CASE " + outNoFilesPerCountry.keys.foldLeft("ELSE 2 END")( (acc, x) =>
+        s"WHEN country_code = $x THEN floor(pmod(rand()*100, ${outNoFilesPerCountry(x)} )) $acc"))
       val aggEmailRePart = aggEmail.repartition(finalPartCol.map(c => col(c)) :+ fCol: _*)
       saveDataFrameToHdfs(aggEmailRePart, tmpLocation, targetInputFormat, finalPartCol)
 
@@ -101,17 +100,11 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     log.info("=" * 30 + "Process Finished" + "=" * 30)
   }
 
-  def getFiles(event: String, dates: Seq[String], batchStartDate: DateTime, batchEndDate: DateTime,
-               eventDatesFilesMap: mutable.Map[(String, String), List[String]]): List[String] = {
-    val files = mutable.ListBuffer[List[String]]()
-    for (date <- dates) {
-      val dt = DateTime.parse(date)
-      if (batchStartDate <= dt && dt <= batchEndDate) {
-        files += eventDatesFilesMap((event, date))
-      }
+  def getFiles(batchStartDate: DateTime, batchEndDate: DateTime,dateFilesMap: Map[String, Seq[String]]): Seq[String] = {
 
-    }
-    files.toList.flatMap(x => x)
+   dateFilesMap
+      .filterKeys( date => DateTime.parse(date) >= batchStartDate && DateTime.parse(date ) <= batchEndDate)
+      .flatMap{ case (_, files) => files}.toSeq
   }
 
   def createDF(event: String, format: String, files: Seq[String]): Unit = {
@@ -120,45 +113,48 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     val df = spark.read.format(format).load(files: _*)
       .filter(s"$sourceCountryColumn in (${seqToQuotedString(countries)})")
-      .withColumn(s"$eventDateCol", from_unixtime($"$eventTimeCol" / 1000, yyyy_MM_dd))
+      .withColumn(s"$eventDateCol", from_unixtime(expr("$eventTimeCol") / 1000, yyyy_MM_dd))
 
     df.createOrReplaceTempView(eventsMap(event))
 
   }
 
-  def extractDatesAndFilesToProcess(startDt: DateTime, endDt: DateTime) = {
-    val eventDatesMap = mutable.Map[String, Seq[String]]()
-    val eventDatesFilesMap = mutable.Map[(String, String), List[String]]()
+  def extractDatesAndFilesToProcess(startDt: DateTime, endDt: DateTime): Map[String, Map[String, Seq[String]]] = {
 
-    for (event <- events) {
+    val datePattern = raw"\d{4}-\d{2}-\d{2}".r
 
-      val allFiles = dfs.globStatus(new Path(s"$sourceLocation/${sourcePartitionLocation.format(dtPattern, platform, event)}/*"))
-        .filter(x => x.getModificationTime > startDt.getMillis && x.getModificationTime <= endDt.getMillis)
-
-      val datesToProcess = allFiles.map(fs => (fs.getLen, raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(fs.getPath.toString)))
-        .groupBy { case (size, date) => date }.mapValues(x => x.map { case (size, date) => size }.sum)
-        .filter((x) => x._2 > sizeThresholds(event))
-
-      val datesOnly = datesToProcess.keys.flatten.toList
-
-      val filesToProcess = allFiles.filter { fs => datesOnly.contains(raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(fs.getPath.toString).getOrElse("None"))
-      }.map(fs => fs.getPath.toString)
-
-      for (f <- filesToProcess) {
-        val dt = raw"\d{4}-\d{2}-\d{2}".r.findFirstIn(f).getOrElse("None")
-
-        if (eventDatesFilesMap contains ((event, dt))) {
-          eventDatesFilesMap((event, dt)) = eventDatesFilesMap((event, dt)) ::: List(f)
-        }
-        else {
-          eventDatesFilesMap((event, dt)) = List(f)
-        }
-      }
-      eventDatesMap += (event -> datesOnly)
-
-
+    def fileModTimeFilter(fs: FileStatus): Boolean = {
+      val fileModTime = fs.getModificationTime
+      fileModTime >= startDt.getMillis && fileModTime <= endDt.getMillis
     }
-    (eventDatesMap, eventDatesFilesMap)
+
+    val eventDateFiles = for (event <- events) yield{
+
+      val path = new Path(s"$sourceLocation/${sourcePartitionLocation.format(dtPattern, platform, event)}")
+      // Getting source event directories that had been updated between startDt and endDt parameters
+      val updatedDirs = dfs.globStatus(path)
+                          .filter(x => fileModTimeFilter(x))
+                          .map(_.getPath)
+
+      // Getting all new source files within the updated directories
+      val newSourceFiles = dfs.listStatus(updatedDirs)
+                             .filter(x => fileModTimeFilter(x))
+
+      /**
+        * 1. Group files by eventDate
+        * 2. filter out date if the sum of size new files on the day is less then the threshold value
+        * This filtering is done to avoid reprocessing any date with very few new source data
+         */
+
+      val filesByDate = newSourceFiles
+        .groupBy(fs => datePattern.findFirstIn(fs.getPath.toString).getOrElse("None"))
+        .filter{ case (date, fs) => fs.map(_.getLen).sum > sizeThresholds(event)}
+        .mapValues(_.map(_.getPath.toString).toSeq)
+
+      (event, filesByDate)
+    }
+
+    eventDateFiles.toMap
   }
 
   def getColsFromDF(df: DataFrame, exclude: Seq[String]) = {
@@ -208,19 +204,28 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
   def createEmailSendStage() = {
     val qry =
       s"""
-         | SELECT
-         |      emailSendId
-         |     ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
-         |     ,country
-         |     ,MIN(emailSubject) AS emailSubject
-         |     ,MIN(campaignGroup) AS campaignGroup
-         |     ,MIN(businessGroup) AS businessGroup
-         | FROM send
+         |SELECT
+         |     emailSendId
+         |    ,emailHash
+         |    ,country
+         |    ,MIN(emailSubject) AS emailSubject
+         |    ,MIN(campaignGroup) AS campaignGroup
+         |    ,MIN(businessGroup) AS businessGroup
+         |FROM (
+         |       SELECT
+         |            emailSendId
+         |           ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
+         |           ,country
+         |           ,emailSubject
+         |           ,campaignGroup
+         |           ,businessGroup
+         |       FROM send
+         |     ) a
          | GROUP BY 1,2,3
        """.stripMargin
 
     val sendDF = sql(qry)
-    sendDF.createTempView("stg_email_send")
+    sendDF.createOrReplaceTempView("stg_email_send")
     log.info("EmailSendStage:" + qry)
 
   }
@@ -228,19 +233,28 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
   def createEmailDeliveryStage() = {
     val qry =
       s"""
-         | SELECT
-         |      emailSendId
-         |     ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
-         |     ,country
-         |     ,MIN(from_unixtime(CAST(substr(eventTime,1,10) AS INT),'yyyy-MM-dd HH:mm:ss')) AS event_time
-         |     ,MIN(event_date) AS event_date
-         |     ,MIN(emailName) AS emailName
-         | FROM delivery
+         |SELECT
+         |     emailSendId
+         |    ,emailHash
+         |    ,country
+         |    ,MIN(from_unixtime(CAST(substr(eventTime,1,10) AS INT),'yyyy-MM-dd HH:mm:ss')) AS event_time
+         |    ,MIN(event_date) AS event_date
+         |    ,MIN(emailName) AS emailName
+         |FROM (
+         |       SELECT
+         |            emailSendId
+         |           ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
+         |           ,country
+         |           ,eventTime
+         |           ,event_date
+         |           ,emailName
+         |       FROM delivery
+         |     ) a
          | GROUP BY 1,2,3
        """.stripMargin
 
     val sendDeliveryDF = sql(qry)
-    sendDeliveryDF.createTempView("stg_email_delivery")
+    sendDeliveryDF.createOrReplaceTempView("stg_email_delivery")
     log.info("EmailDeliveryStage:" + qry)
 
   }
@@ -260,7 +274,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       """.stripMargin
 
     val openDF = sql(qry)
-    openDF.createTempView("stg_email_open")
+    openDF.createOrReplaceTempView("stg_email_open")
     log.info("EmailOpenStage:" + qry)
 
   }
@@ -282,7 +296,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
 
     val clickDF = sql(qry)
-    clickDF.createTempView("stg_email_click")
+    clickDF.createOrReplaceTempView("stg_email_click")
     log.info("EmailClickStage:" + qry)
 
   }
@@ -292,22 +306,31 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       s"""
          | SELECT
          |      emailSendId
-         |     ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
+         |     ,emailHash
          |     ,country
-         |     ,CASE WHEN bounceCategory IN ('1 Undetermined','40 Generic Bounce','50 Mail Block','100 Challenge-Response'
-         |                                   ,'52 Spam Content','54 Relaying Denied','51 Spam Block') THEN 1
-         |           WHEN bounceCategory IN ('70 Transient Failure','20 Soft Bounce','24 Timeout','23 Too Large',
-         |                                   '25 Admin Failure','60 Auto-Reply','21 DNS Failure','22 Mailbox Full') THEN 2
-         |           WHEN bounceCategory IN ('10 Invalid Recipient','90 Unsubscribe','30 Generic Bounce No RCPT') THEN 3
-         |           WHEN sourceTopicName LIKE 'msys_fbl%' OR sourceTopicName LIKE 'msys_listunsub%' THEN 4
-         |           ELSE NULL END AS  email_bounce_type_id
+         |     ,email_bounce_type_id
          |     ,MIN(event_date) as event_date
-         | FROM bounce
+         | FROM (
+         |        SELECT
+         |             emailSendId
+         |            ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
+         |            ,country
+         |            ,CASE WHEN bounceCategory IN ('1 Undetermined','40 Generic Bounce','50 Mail Block','100 Challenge-Response'
+         |                                   ,'52 Spam Content','54 Relaying Denied','51 Spam Block') THEN 1
+         |                  WHEN bounceCategory IN ('70 Transient Failure','20 Soft Bounce','24 Timeout','23 Too Large',
+         |                                   '25 Admin Failure','60 Auto-Reply','21 DNS Failure','22 Mailbox Full') THEN 2
+         |                  WHEN bounceCategory IN ('10 Invalid Recipient','90 Unsubscribe','30 Generic Bounce No RCPT') THEN 3
+         |                  WHEN sourceTopicName LIKE 'msys_fbl%' OR sourceTopicName LIKE 'msys_listunsub%' THEN 4
+         |                  ELSE NULL
+         |             END AS  email_bounce_type_id
+         |            ,event_date
+         |        FROM bounce
+         |      ) a
          | GROUP BY 1,2,3,4
       """.stripMargin
 
 
-    sql(qry).createTempView("stg_email_bounce_temp")
+    sql(qry).createOrReplaceTempView("stg_email_bounce_temp")
     log.info("EmailBounceStageTemp:" + qry)
 
     qry =
@@ -326,7 +349,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
 
     val bounceDF = sql(qry)
-    bounceDF.createTempView("stg_email_bounce")
+    bounceDF.createOrReplaceTempView("stg_email_bounce")
     log.info("EmailBounceStage:" + qry)
   }
 
@@ -377,7 +400,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     val stgAggEmailDF = sql(qry)
     stgAggEmailDF.cache()
-    stgAggEmailDF.createTempView("stg_agg_email")
+    stgAggEmailDF.createOrReplaceTempView("stg_agg_email")
     log.info("AggEmailStage:" + qry)
     stgAggEmailDF
 

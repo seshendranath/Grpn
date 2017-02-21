@@ -38,10 +38,10 @@ object Email {
       .appName("AggEmailPipeline")
       .enableHiveSupport()
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      .config("spark.dynamicAllocation.enabled", "False")
       .getOrCreate()
-
-    // .config("spark.sql.shuffle.partitions", 1024)
   }
+
+//    .config("spark.dynamicAllocation.enabled", "False")
+//    .config("spark.sql.shuffle.partitions", 1024)
 
 }
