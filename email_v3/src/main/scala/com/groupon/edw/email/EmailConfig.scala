@@ -71,7 +71,7 @@ object EmailConfig {
                     dimUserTbl: String = "prod_groupondw.gbl_dim_user_uniq",
                     defaultDate: String = "9999-12-31",
                     stgOutputNumFiles: Int = 50,
-                    outputNumFiles: Int = 50,
+                    defaultOutputNoFiles: Int = 1,
                     outNoFilesPerCountry: Map[String, Int] = outNoFilesPerCountry
                    )
 
