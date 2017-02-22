@@ -79,7 +79,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("Saving the merged data to temp location")
 
       val fCol: Column = expr(outNoFilesPerCountry.map{ case (country_code, numFiles) =>
-        s" WHEN ${finalPartCol(1)} = $country_code THEN floor(pmod(rand() * 100, $numFiles))"
+        s" WHEN ${finalPartCol(1)} = '$country_code' THEN floor(pmod(rand() * 100, $numFiles))"
       }.mkString("CASE\n", "\n", s"\nELSE floor(pmod(rand() * 100, $defaultOutputNoFiles)) END"))
       val aggEmailRePart = aggEmail.repartition(finalPartCol.map(c => col(c)) :+ fCol: _*)
       saveDataFrameToHdfs(aggEmailRePart, tmpLocation, targetInputFormat, finalPartCol)
