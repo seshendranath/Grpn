@@ -48,10 +48,11 @@ object Utils {
   }
 
   def getStartEndTimeStamp(startTimeStamp: Option[String], endTimeStamp: Option[String]): (DateTime, DateTime) = {
-    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None")) else DateTime.now - 1.day
-    val endDt = if (endTimeStamp.isDefined) DateTime.parse(endTimeStamp.getOrElse("None")) else DateTime.now
-    (startDt, endDt)
+    val formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
+    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None"), formatter) else DateTime.now - 1.day
+    val endDt = if (endTimeStamp.isDefined) DateTime.parse(endTimeStamp.getOrElse("None"), formatter) else DateTime.now
 
+    (startDt, endDt)
   }
 
   def seqToQuotedString(seq: Seq[String]) = {

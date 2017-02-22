@@ -18,8 +18,8 @@ object EmailConfig {
       opt[String]("sourceTable") action ((x, c) => c.copy(sourceTable = x)) text "Source Table"
       opt[String]("targetDb") action ((x, c) => c.copy(targetDb = x)) text "Target DB"
       opt[String]("targetTable") action ((x, c) => c.copy(targetTable = x)) text "Target DB"
-      opt[String]("start_timestamp") action ((x, c) => c.copy(startTimeStamp = Some(x))) text "Start TimeStamp"
-      opt[String]("end_timestamp") action ((x, c) => c.copy(endTimeStamp = Some(x))) text "End TimeStamp"
+      opt[String]("start_timestamp") action ((x, c) => c.copy(startTimeStamp = Some(x))) text "Start TimeStamp: yyyy-MM-dd HH:mm:ss"
+      opt[String]("end_timestamp") action ((x, c) => c.copy(endTimeStamp = Some(x))) text "End TimeStamp: yyyy-MM-dd HH:mm:ss"
       opt[Seq[String]]("countries") action ((x, c) => c.copy(countries = x)) text "Countries to be processed"
 
       opt[Unit]("debug").action((_, c) =>
@@ -48,7 +48,6 @@ object EmailConfig {
                     targetInputFormat: String = "orc",
                     sourceCountryColumn: String = "country",
                     sourcePartitionLocation: String = "/eventDate=%s/platform=%s/eventDestination=%s",
-                    offset: Int = 7,
                     platform: String = "email",
                     events: Array[String] = events,
                     eventsMap: Map[String, String] = eventsMap,
@@ -66,6 +65,7 @@ object EmailConfig {
                     appLogLevel: String = "Info",
                     sizeThresholds: Map[String, Long] = sizeThresholds,
                     dtPattern: String = "????-??-??",
+                    offset: Int = 7,
                     batchSize: Int = 9,
                     intervalSize: Int = 8,
                     dimUserTbl: String = "prod_groupondw.gbl_dim_user_uniq",

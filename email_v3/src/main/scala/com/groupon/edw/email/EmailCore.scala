@@ -91,7 +91,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       val cols = getColsFromDF(aggEmail, finalPartCol)
       checkAndCreateHiveDDL(hiveMetaStore, targetDb, targetTable, targetInputFormat, targetLocation, cols, finalPartCol)
 
-      log.info("Adding partitions to hive metastore")
+      log.info("Adding partitions to hive table")
       val sendDates: List[DateTime] = DateTime.parse(defaultDate) :: (batchStartDate - offset.days to batchEndDate by 1.day).toList
       aggEmailAddHivePartitions(sendDates, countries.toList)
       log.info("=" * 30 + "Batch Finished" + "=" * 30)
