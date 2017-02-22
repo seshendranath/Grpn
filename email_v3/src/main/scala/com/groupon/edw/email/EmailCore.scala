@@ -114,7 +114,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     val df = spark.read.format(format).load(files: _*)
       .filter(s"$sourceCountryColumn in (${seqToQuotedString(countries)})")
-      .withColumn(s"$eventDateCol", from_unixtime(expr("$eventTimeCol") / 1000, yyyy_MM_dd))
+      .withColumn(s"$eventDateCol", from_unixtime(expr(s"$eventTimeCol") / 1000, yyyy_MM_dd))
 
     df.createOrReplaceTempView(eventsMap(event))
 

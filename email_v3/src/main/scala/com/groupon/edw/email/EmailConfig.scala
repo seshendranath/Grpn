@@ -60,6 +60,7 @@ object EmailConfig {
                     stgString: String = stgString,
                     stgLocation: String = targetLocation + stgString,
                     tmpLocation: String = targetLocation + tmpString,
+                    emailSalt: String = "ph5p6uTezuwr4c8aprux",
                     defaultNumCountries: Int = countries.length,
                     sparkLogLevel: String = "Warn",
                     appLogLevel: String = "Info",
