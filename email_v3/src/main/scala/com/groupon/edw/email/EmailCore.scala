@@ -40,7 +40,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     log.info("Kicked Off")
     val (startDt, endDt) = getStartEndTimeStamp(startTimeStamp, endTimeStamp)
     val eventDateFilesMap = extractDatesAndFilesToProcess(startDt, endDt)
-    log.info(s"EventDatesMap ${eventDateFilesMap.mapValues(_.keys)}")
+    log.info(s"EventDatesMap ${eventDateFilesMap.mapValues(_.keys.toList.sortWith(_>_))}")
     val dts = eventDateFilesMap.values.flatMap(_.keys).toSet.map((dt: String) => DateTime.parse(dt)).toSeq
 
     if (dts.isEmpty) {
