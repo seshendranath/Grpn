@@ -68,6 +68,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
       log.info("Creating stage tables for Agg Email")
       val stgAggEmail = createAggEmailStage()
+      stgAggEmail.persist()
       saveDataFrameToHdfs(stgAggEmail.coalesce(stgOutputNumFiles), stgLocation, targetInputFormat)
 
       log.info("Checking for DDL changes and Staging Table Existence")
@@ -94,6 +95,8 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("Adding partitions to hive table")
       val sendDates: List[DateTime] = DateTime.parse(defaultDate) :: (batchStartDate - offset.days to batchEndDate by 1.day).toList
       aggEmailAddHivePartitions(sendDates, countries.toList)
+
+      stgAggEmail.unpersist()
       log.info("=" * 30 + "Batch Finished" + "=" * 30)
 
     }
@@ -400,7 +403,6 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       """.stripMargin
 
     val stgAggEmailDF = sql(qry)
-    stgAggEmailDF.cache()
     stgAggEmailDF.createOrReplaceTempView("stg_agg_email")
     log.info("AggEmailStage:" + qry)
     stgAggEmailDF
@@ -470,7 +472,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |            FROM $targetDb.$targetTable
          |            WHERE (${finalPartCol(0)} BETWEEN '${startDate.minusDays(offset).toString(yyyy_MM_dd)}' AND '${endDate.toString(yyyy_MM_dd)}'
          |                    OR ${finalPartCol(0)} = '$defaultDate')
-         |                  AND ${finalPartCol(0)} IN (${seqToQuotedString(countries)})
+         |                  AND ${finalPartCol(1)} IN (${seqToQuotedString(countries)})
          |          ) f
          |      FULL OUTER JOIN stg_agg_email s
          |      ON s.send_id = f.send_id  AND s.emailHash = f.emailHash AND s.country_code = f.country_code
