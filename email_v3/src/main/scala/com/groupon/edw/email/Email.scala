@@ -4,10 +4,11 @@ package com.groupon.edw.email
   * Created by aguyyala on 2/16/17.
   */
 
-
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 
+import Ultron._
+import Utils._
 
 object Email {
 
@@ -19,15 +20,24 @@ object Email {
     val spark = getSparkSession
     val sparkContext = spark.sparkContext
 
-
     /* Setting appropriate log level */
     sparkContext.setLogLevel(emailConfig.sparkLogLevel)
     log.setLevel(Level.toLevel(emailConfig.appLogLevel))
 
     log.info("=" * 100 + sparkContext.applicationId + "=" * 100)
 
-    new EmailCore(spark, emailConfig).runner()
+    try {
+      new EmailCore(spark, emailConfig).runner()
+    }
+    catch {
+      case e: Exception => errorHandler(e)
+    }
 
+    def errorHandler(e: Exception) = {
+      log.error("Something went WRONG during the run")
+      log.error(e)
+      endJob(instanceId, "failed", startTime, startTime)
+    }
     spark.stop()
 
   }
@@ -37,11 +47,7 @@ object Email {
       .builder
       .appName("AggEmailPipeline")
       .enableHiveSupport()
-      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
   }
-
-//    .config("spark.dynamicAllocation.enabled", "False")
-//    .config("spark.sql.shuffle.partitions", 1024)
 
 }

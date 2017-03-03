@@ -18,9 +18,10 @@ object EmailConfig {
       opt[String]("sourceTable") action ((x, c) => c.copy(sourceTable = x)) text "Source Table"
       opt[String]("targetDb") action ((x, c) => c.copy(targetDb = x)) text "Target DB"
       opt[String]("targetTable") action ((x, c) => c.copy(targetTable = x)) text "Target DB"
-      opt[String]("start_timestamp") action ((x, c) => c.copy(startTimeStamp = Some(x))) text "Start TimeStamp: yyyy-MM-dd HH:mm:ss"
-      opt[String]("end_timestamp") action ((x, c) => c.copy(endTimeStamp = Some(x))) text "End TimeStamp: yyyy-MM-dd HH:mm:ss"
+      opt[String]("startTimestamp") action ((x, c) => c.copy(startTimeStamp = Some(x))) text "Start TimeStamp: yyyy-MM-dd HH:mm:ss"
+      opt[String]("endTimestamp") action ((x, c) => c.copy(endTimeStamp = Some(x))) text "End TimeStamp: yyyy-MM-dd HH:mm:ss"
       opt[Seq[String]]("countries") action ((x, c) => c.copy(countries = x)) text "Countries to be processed"
+      opt[Int]("batchSize") action ((x, c) => c.copy(batchSize = x)) text "Batch Size in each run"
 
       opt[Unit]("debug").action((_, c) =>
         c.copy(debug = true)).text("Debug Flag")
@@ -55,6 +56,7 @@ object EmailConfig {
                     eventTimeCol: String = "eventTime",
                     targetLocation: String = targetLocation,
                     finalPartCol: Array[String] = Array("send_date", "country_code"),
+                    stgPartCol: Array[String] = Array("run_id"),
                     tmpString: String = tmpString,
                     stgString: String = stgString,
                     stgLocation: String = targetLocation + stgString,
@@ -66,11 +68,11 @@ object EmailConfig {
                     sizeThresholds: Map[String, Long] = sizeThresholds,
                     dtPattern: String = "????-??-??",
                     offset: Int = 7,
-                    batchSize: Int = 0,
-                    intervalSize: Int = 1,
+                    batchSize: Int = 7,
+                    intervalSize: Int = 7,
                     dimUserTbl: String = "prod_groupondw.gbl_dim_user_uniq",
                     defaultDate: String = "9999-12-31",
-                    stgOutputNumFiles: Int = 50,
+                    stgOutputNumFiles: Int = 100,
                     defaultOutputNoFiles: Int = 1,
                     outNoFilesPerCountry: Map[String, Int] = outNoFilesPerCountry
                    )

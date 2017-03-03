@@ -18,11 +18,15 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 
+import Ultron._
+
 object Utils {
 
   //  val yyyy_MM_dd = DateTimeFormat.forPattern("yyyy-MM-dd")
 
   val yyyy_MM_dd = "yyyy-MM-dd"
+  val timeFormat = "yyyy-MM-dd HH:mm:ss"
+  val formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
 
   val sparkToHiveDataType: Map[String, String] = Map("StringType" -> "string", "LongType" -> "bigint", "IntegerType" -> "int")
 
@@ -36,6 +40,9 @@ object Utils {
   val log = Logger.getLogger(getClass)
   log.setLevel(Level.toLevel("Info"))
 
+  log.info("Fetching Data from Ultron")
+  val (instanceId, startTime) = startJob()
+  log.info(s"Ultron StartTime: $startTime")
 
   def getSparkFileFormat(fileFormat: String): String = {
     val format = fileFormat.toLowerCase
@@ -48,8 +55,9 @@ object Utils {
   }
 
   def getStartEndTimeStamp(startTimeStamp: Option[String], endTimeStamp: Option[String]): (DateTime, DateTime) = {
-    val formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
-    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None"), formatter) else DateTime.now - 1.day
+
+    // val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None"), formatter) else DateTime.now - 1.day
+    val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None"), formatter) else DateTime.parse(startTime, formatter)
     val endDt = if (endTimeStamp.isDefined) DateTime.parse(endTimeStamp.getOrElse("None"), formatter) else DateTime.now
 
     (startDt, endDt)
@@ -106,8 +114,12 @@ object Utils {
 
     if (!tblExist || !ddlMatch) {
       log.info("TABLE Does Not Exists OR DDL Mismatch, Creating New One")
+
+      if (tblExist) hiveMetaStore.dropTable(dbName, tblName)
+
       val s = new SerDeInfo()
       s.setSerializationLib(formatInfo(format)("serde"))
+      s.setParameters(Map("serialization.format" -> "1").asJava)
 
       val sd = new StorageDescriptor()
       sd.setSerdeInfo(s)

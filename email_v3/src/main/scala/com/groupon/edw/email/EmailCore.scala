@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import EmailCore._
 import Utils._
-
+import Ultron._
 
 class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
@@ -35,17 +35,21 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
   val sourceLocation = getHiveTableLocation(hiveMetaStore, sourceDb, sourceTable)
   val sourceInputFormat = getHiveInputFormat(hiveMetaStore, sourceDb, sourceTable)
 
+  val run_id = DateTime.now.toString("yyyyMMddHHmmss")
+
   def runner() = {
 
     log.info("Kicked Off")
     val (startDt, endDt) = getStartEndTimeStamp(startTimeStamp, endTimeStamp)
     val eventDateFilesMap = extractDatesAndFilesToProcess(startDt, endDt)
-    log.info(s"EventDatesMap ${eventDateFilesMap.mapValues(_.keys.toList.sortWith(_>_))}")
+    log.info(s"EventDatesMap ${eventDateFilesMap.mapValues(_.keys.toList.sortWith(_ > _))}")
     val dts = eventDateFilesMap.values.flatMap(_.keys).toSet.map((dt: String) => DateTime.parse(dt)).toSeq
 
     if (dts.isEmpty) {
       log.info("No Dates to Process. Either the threshold is too high or the Upstream didn't write any files")
-      System.exit(1)
+      log.info("Updating Ultron Job Instance")
+      endJob(instanceId, "succeeded", startDt.toString(timeFormat), startDt.toString(timeFormat))
+      System.exit(0)
     }
 
     val batches = prepareBatch(dts, batchSize, intervalSize)
@@ -69,17 +73,21 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("Creating stage tables for Agg Email")
       val stgAggEmail = createAggEmailStage()
       stgAggEmail.persist()
+      val stgLoc = stgLocation + "/" + stgPartCol(0) + "=" + run_id
       saveDataFrameToHdfs(stgAggEmail.coalesce(stgOutputNumFiles), stgLocation, targetInputFormat)
 
       log.info("Checking for DDL changes and Staging Table Existence")
       val stgCols = getColsFromDF(stgAggEmail, Array[String]())
-      checkAndCreateHiveDDL(hiveMetaStore, targetDb, stgTable, targetInputFormat, stgLocation, stgCols, Array[String]())
+      checkAndCreateHiveDDL(hiveMetaStore, targetDb, stgTable, targetInputFormat, stgLocation, stgCols, stgPartCol)
+
+      log.info("Adding partitions to Staging hive table")
+      addHivePartition(hiveMetaStore, targetDb, stgTable, (List(run_id), stgLoc))
 
       log.info("Merging with agg email")
       val aggEmail = mergeAggEmail(batchStartDate, batchEndDate, offset)
       log.info("Saving the merged data to temp location")
 
-      val fCol: Column = expr(outNoFilesPerCountry.map{ case (country_code, numFiles) =>
+      val fCol: Column = expr(outNoFilesPerCountry.map { case (country_code, numFiles) =>
         s" WHEN ${finalPartCol(1)} = '$country_code' THEN floor(pmod(rand() * 100, $numFiles))"
       }.mkString("CASE\n", "\n", s"\nELSE floor(pmod(rand() * 100, $defaultOutputNoFiles)) END"))
       val aggEmailRePart = aggEmail.repartition(finalPartCol.map(c => col(c)) :+ fCol: _*)
@@ -92,7 +100,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       val cols = getColsFromDF(aggEmail, finalPartCol)
       checkAndCreateHiveDDL(hiveMetaStore, targetDb, targetTable, targetInputFormat, targetLocation, cols, finalPartCol)
 
-      log.info("Adding partitions to hive table")
+      log.info("Adding partitions to Final hive table")
       val sendDates: List[DateTime] = DateTime.parse(defaultDate) :: (batchStartDate - offset.days to batchEndDate by 1.day).toList
       aggEmailAddHivePartitions(sendDates, countries.toList)
 
@@ -100,15 +108,16 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("=" * 30 + "Batch Finished" + "=" * 30)
 
     }
-
+    log.info("Updating Ultron Job Instance")
+    endJob(instanceId, "succeeded", startDt.toString(timeFormat), endDt.toString(timeFormat))
     log.info("=" * 30 + "Process Finished" + "=" * 30)
   }
 
-  def getFiles(batchStartDate: DateTime, batchEndDate: DateTime,dateFilesMap: Map[String, Seq[String]]): Seq[String] = {
+  def getFiles(batchStartDate: DateTime, batchEndDate: DateTime, dateFilesMap: Map[String, Seq[String]]): Seq[String] = {
 
-   dateFilesMap
-      .filterKeys( date => DateTime.parse(date) >= batchStartDate && DateTime.parse(date ) <= batchEndDate)
-      .flatMap{ case (_, files) => files}.toSeq
+    dateFilesMap
+      .filterKeys(date => DateTime.parse(date) >= batchStartDate && DateTime.parse(date) <= batchEndDate)
+      .flatMap { case (_, files) => files }.toSeq
   }
 
   def createDF(event: String, format: String, files: Seq[String]): Unit = {
@@ -132,27 +141,27 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       fileModTime >= startDt.getMillis && fileModTime <= endDt.getMillis
     }
 
-    val eventDateFiles = for (event <- events) yield{
+    val eventDateFiles = for (event <- events) yield {
 
       val path = new Path(s"$sourceLocation/${sourcePartitionLocation.format(dtPattern, platform, event)}")
       // Getting source event directories that had been updated between startDt and endDt parameters
       val updatedDirs = dfs.globStatus(path)
-                          .filter(x => fileModTimeFilter(x))
-                          .map(_.getPath)
+        .filter(x => fileModTimeFilter(x))
+        .map(_.getPath)
 
       // Getting all new source files within the updated directories
       val newSourceFiles = dfs.listStatus(updatedDirs)
-                             .filter(x => fileModTimeFilter(x))
+        .filter(x => fileModTimeFilter(x))
 
       /**
         * 1. Group files by eventDate
         * 2. filter out date if the sum of size new files on the day is less then the threshold value
         * This filtering is done to avoid reprocessing any date with very few new source data
-         */
+        */
 
       val filesByDate = newSourceFiles
         .groupBy(fs => datePattern.findFirstIn(fs.getPath.toString).getOrElse("None"))
-        .filter{ case (date, fs) => fs.map(_.getLen).sum > sizeThresholds(event)}
+        .filter { case (date, fs) => fs.map(_.getLen).sum > sizeThresholds(event) }
         .mapValues(_.map(_.getPath.toString).toSeq)
 
       (event, filesByDate)
@@ -192,7 +201,6 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
         parts += ((List(date.toString(yyyy_MM_dd), country), loc))
       }
     }
-    log.info("Adding Partitions to the Table")
     addHivePartitions(hiveMetaStore, targetDb, targetTable, parts.toList)
   }
 
@@ -292,7 +300,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,country
          |     ,MIN(event_date) AS event_date
          |     ,MIN(userAgent) AS userAgent
-         |     ,MIN(CASE WHEN clickDestination LIKE '%unsub%' THEN event_date ELSE $defaultDate END) AS unsub_date
+         |     ,MIN(CASE WHEN clickDestination LIKE '%unsub%' THEN event_date ELSE '$defaultDate' END) AS unsub_date
          | FROM click
          | WHERE event="${eventsMapInverse("click")}"
          | GROUP BY 1,2,3
@@ -503,7 +511,7 @@ object EmailCore {
     def loop(acc: List[(DateTime, DateTime)], batchStartDt: DateTime, prevDt: DateTime, dt: List[DateTime]): List[(DateTime, DateTime)] = {
 
       dt match {
-        case Nil => (batchStartDt, prevDt) :: acc
+        case Nil => ((batchStartDt, prevDt) :: acc).reverse
         case curDt :: remainingDts =>
           if (Days.daysBetween(prevDt, curDt).getDays <= intervalDays && Days.daysBetween(batchStartDt, curDt).getDays <= size) {
             loop(acc, batchStartDt, curDt, remainingDts)

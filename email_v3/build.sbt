@@ -70,7 +70,9 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-hive" % sparkVersion % sparkDependencyScope,
   "org.apache.spark" %% "spark-yarn" % sparkVersion % sparkDependencyScope,
   "com.github.scopt" %% "scopt" % "3.5.0",
-  "com.github.nscala-time" %% "nscala-time" % "2.16.0"
+  "com.github.nscala-time" %% "nscala-time" % "2.16.0",
+  "com.typesafe.play" %% "play-json" % "2.5.12",
+  "com.squareup.okhttp3" % "okhttp" % "3.5.0"
 //  "org.apache.spark" %% "spark-mllib" % sparkVersion % sparkDependencyScope,
 //  "org.apache.spark" %% "spark-streaming" % sparkVersion % sparkDependencyScope
 )
