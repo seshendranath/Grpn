@@ -26,6 +26,8 @@ object Email {
 
     log.info("=" * 100 + sparkContext.applicationId + "=" * 100)
 
+    val s = System.nanoTime()
+
     try {
       new EmailCore(spark, emailConfig).runner()
     }
@@ -38,6 +40,10 @@ object Email {
       log.error(e)
       endJob(instanceId, "failed", startTime, startTime)
     }
+
+    val e = System.nanoTime()
+    val totalTime = (e - s)/(1e9*60)
+    log.info("Total Elapsed time: " + f"$totalTime%2.2f" + " mins")
     spark.stop()
 
   }

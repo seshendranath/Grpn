@@ -74,7 +74,8 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       val stgAggEmail = createAggEmailStage()
       stgAggEmail.persist()
       val stgLoc = stgLocation + "/" + stgPartCol(0) + "=" + run_id
-      saveDataFrameToHdfs(stgAggEmail.coalesce(stgOutputNumFiles), stgLocation, targetInputFormat)
+      saveDataFrameToHdfs(stgAggEmail.coalesce(stgOutputNumFiles), stgLoc, targetInputFormat)
+
 
       log.info("Checking for DDL changes and Staging Table Existence")
       val stgCols = getColsFromDF(stgAggEmail, Array[String]())

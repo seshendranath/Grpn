@@ -94,7 +94,7 @@ object EmailConfig {
   val tmpString: String = "_tmp"
   val stgString: String = "_stg"
 
-  val outNoFilesPerCountry = Map("AE" -> 1, "AU" -> 2, "BE" -> 2, "CA" -> 1, "DE" -> 5, "ES" -> 4, "FR" -> 7, "IE" -> 1,
-    "IT" -> 10, "JP" -> 3, "NL" -> 2, "NZ" -> 1, "PL" -> 2, "UK" -> 40, "US" -> 60)
+  val outNoFilesPerCountry = Map("AE" -> 2, "AU" -> 4, "BE" -> 3, "CA" -> 2, "DE" -> 10, "ES" -> 10, "FR" -> 25, "IE" -> 1,
+    "IT" -> 20, "JP" -> 8, "NL" -> 3, "NZ" -> 1, "PL" -> 3, "UK" -> 40, "US" -> 160)
 
 }
