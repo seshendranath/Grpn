@@ -35,7 +35,10 @@ object Utils {
     "outputFormat" -> "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"),
     "parquet" -> Map("serde" -> "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
       "inputFormat" -> "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
-      "outputFormat" -> "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"))
+      "outputFormat" -> "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"),
+    "csv" -> Map("serde" -> "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+      "inputFormat" -> "org.apache.hadoop.mapred.TextInputFormat",
+      "outputFormat" -> "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"))
 
   val log = Logger.getLogger(getClass)
   log.setLevel(Level.toLevel("Info"))
@@ -83,7 +86,13 @@ object Utils {
 
   def saveDataFrameToHdfs(df: DataFrame, path: String, format: String) = {
     log.info(s"Writing DataFrame to $path")
-    df.write.mode(Overwrite).format(format).save(path)
+    if (format != "csv") {
+      df.write.mode(Overwrite).format(format).save(path)
+    }
+    else {
+      df.write.mode(Overwrite).format(format).option("sep", "\u0001").save(path)
+    }
+
   }
 
   def hdfsRemoveAndMove(dfs: FileSystem, dfc: FileContext, srcPath: String, tgtPath: String): Unit = {

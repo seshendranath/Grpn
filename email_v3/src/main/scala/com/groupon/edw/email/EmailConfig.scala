@@ -47,6 +47,7 @@ object EmailConfig {
                     countries: Seq[String] = countries,
                     debug: Boolean = false,
                     targetInputFormat: String = "orc",
+                    stgInputFormat: String = "csv",
                     sourceCountryColumn: String = "country",
                     sourcePartitionLocation: String = "/eventDate=%s/platform=%s/eventDestination=%s",
                     platform: String = "email",

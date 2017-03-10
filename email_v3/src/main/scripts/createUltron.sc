@@ -51,8 +51,22 @@ object Ultron {
       throw new RuntimeException("Something went wrong while updating Ultron")
     }
   }
+
+  def endJob(instanceId: String, status: String) = {
+
+    val endRequest = new Request.Builder()
+      .url(s"$url/end/$instanceId/$status")
+      .post(RequestBody.create(null, Array[Byte]()))
+
+    val response = client.newCall(endRequest.build()).execute()
+    val message = response.message()
+    println(response.code())
+    if (response.code() != successCode) {
+      println(message)
+      throw new RuntimeException("Something went wrong while updating Ultron")
+    }
+  }
 }
 val (id, st) = startJob()
-
-endJob(id, "succeeded", "2017-03-01 12:00:00", "2017-03-01 12:00:00")
-
+// endJob(id, "succeeded", "2017-01-01 00:00:00", "2017-01-01 00:00:00")
+// endJob(id, "failed")

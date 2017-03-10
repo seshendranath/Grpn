@@ -4,14 +4,13 @@ import play.api.libs.json.{JsObject, Json}
 val client = new OkHttpClient()
 
 val requestRun = new Request.Builder()
-  .url("http://ultron-staging-app1.snc1:9000/job/instance/19")
+  .url("http://ultron-staging-app1.snc1:9000/job/instance/list/f29b0f0d02bd11e7bd06002590a05bc0")
   .get()
 
 val responseRun = client.newCall(requestRun.build()).execute()
 val runs = Json.parse(new String(responseRun.body().bytes()))
-
 runs.as[List[JsObject]]
-  .filter(x => (x \ "status").as[Int] == 2)
+  .filter(x => (x \ "status").as[String] == "5493b6dbaae0448f98f5f448a9a0f914")
   .map(x => (x \ "id").as[String])
   .foreach {x =>
     println(x)
@@ -30,5 +29,4 @@ def kill(id: String) = {
   println(response.message())
   println(new String(response.body().bytes()))
 }
-
 

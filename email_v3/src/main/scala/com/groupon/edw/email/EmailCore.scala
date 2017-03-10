@@ -35,8 +35,6 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
   val sourceLocation = getHiveTableLocation(hiveMetaStore, sourceDb, sourceTable)
   val sourceInputFormat = getHiveInputFormat(hiveMetaStore, sourceDb, sourceTable)
 
-  val run_id = DateTime.now.toString("yyyyMMddHHmmss")
-
   def runner() = {
 
     log.info("Kicked Off")
@@ -57,6 +55,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     for ((batchStartDate, batchEndDate) <- batches) {
       log.info("Processing batch " + (batchStartDate.toString(yyyy_MM_dd), batchEndDate.toString(yyyy_MM_dd)))
+      val run_id = DateTime.now.toString("yyyyMMddHHmmss")
 
       for (event <- events) {
 
@@ -74,12 +73,12 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       val stgAggEmail = createAggEmailStage()
       stgAggEmail.persist()
       val stgLoc = stgLocation + "/" + stgPartCol(0) + "=" + run_id
-      saveDataFrameToHdfs(stgAggEmail.coalesce(stgOutputNumFiles), stgLoc, targetInputFormat)
+      saveDataFrameToHdfs(stgAggEmail, stgLoc, stgInputFormat)
 
 
       log.info("Checking for DDL changes and Staging Table Existence")
       val stgCols = getColsFromDF(stgAggEmail, Array[String]())
-      checkAndCreateHiveDDL(hiveMetaStore, targetDb, stgTable, targetInputFormat, stgLocation, stgCols, stgPartCol)
+      checkAndCreateHiveDDL(hiveMetaStore, targetDb, stgTable, stgInputFormat, stgLocation, stgCols, stgPartCol)
 
       log.info("Adding partitions to Staging hive table")
       addHivePartition(hiveMetaStore, targetDb, stgTable, (List(run_id), stgLoc))

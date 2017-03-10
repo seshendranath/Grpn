@@ -1,11 +1,11 @@
-spark-submit
---master yarn \
+spark-submit --master yarn \
 --deploy-mode client \
 --queue dse_testing \
 --driver-memory=5G \
---executor-memory=8G \
---conf spark.dynamicAllocation.maxExecutors=450 \
+--num-executors=100 \
+--executor-cores=3 \
+--executor-memory=13G \
+--conf spark.dynamicAllocation.enabled=false \
 --conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
---conf spark.sql.shuffle.partitions=2048 \
- email.jar \
- --startTimestamp "2017-03-01 12:00:00" \
+--conf spark.sql.shuffle.partitions=600 \
+ email.jar  --startTimestamp "2017-03-01 12:00:00"
