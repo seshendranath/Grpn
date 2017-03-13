@@ -1,0 +1,91 @@
+context:
+  queue: dse_testing
+  tgtDb: svc_edw_dev_db
+  srcTbl: grp_gdoop_pde.junohourly
+  sendTbl: fact_email_send
+  deliveryTbl: fact_email_delivery
+  openTbl: fact_email_open
+  clickTbl: fact_email_click
+  sendDest: emailSend
+  deliveryDest: emailDelivery
+  openDest: emailClick
+  clickDest: emailClick
+  sendEvent: emailSend
+  deliveryEvent: emailDelivery
+  openEvent: emailOpenHeader
+  clickEvent: emailClick
+  sendCols: appVersion,businessGroup,campaignGroup,campaignId,consumerId,dealList,dealSource,emailHash,emailName,emailReceiverAddress,emailSubject,emailType,event,messageId,platform,sourceTopicName,virtualMta
+  deliveryCols: dlvDestinationIP,dlvSourceIP,dlvSize,dsnAction,dsnMTA,emailHash,emailName,emailReceiverAddress,emailSendId,emailType,errorMessage,event,hostIP,platform,rawEvent,virtualMta
+  openCols: appVersion,channel,clientPlatform,consumerId,countryCampaignID,division,event,eventTime,platform,rawEvent,sourceType,websiteId,emailsendid,bcookie,campaign,emailhash,medium,useragent
+  clickCols: emailsendid,emailhash,bcookie,appVersion,clickedon,clickdestination,division,position,clicksection,campaign,medium,channel,useragent,clientPlatform,consumerId,dealPermalink,sourceType,websiteId,event,eventtime
+
+load_start:
+    class: NopTask
+
+
+prepare_fact_email_send_hql:
+   class: ScriptTask
+   dependencies:
+       - load_start
+   configuration:
+       script: |
+          sed -e "s/{tgtTbl}/${sendTbl}/g;s/{cols}/${sendCols}/g;s/{eventDestination}/${sendDest}/g;s/{event}/${sendEvent}/g" load.hql > load_${sendTbl}.hql
+
+
+load_fact_email_send_table:
+    class: HiveTask
+    dependencies:
+        - prepare_fact_email_send_hql
+    configuration:
+        hql_file: load_${sendTbl}.hql
+
+
+prepare_fact_email_delivery_hql:
+   class: ScriptTask
+   dependencies:
+       - load_fact_email_send_table
+   configuration:
+       script: |
+          sed -e "s/{tgtTbl}/${deliveryTbl}/g;s/{cols}/${deliveryCols}/g;s/{eventDestination}/${deliveryDest}/g;s/{event}/${deliveryEvent}/g" load.hql > load_${deliveryTbl}.hql
+
+
+load_fact_email_delivery_table:
+    class: HiveTask
+    dependencies:
+        - prepare_fact_email_delivery_hql
+    configuration:
+        hql_file: load_${deliveryTbl}.hql
+
+
+prepare_fact_email_open_hql:
+   class: ScriptTask
+   dependencies:
+       - load_start
+   configuration:
+       script: |
+          sed -e "s/{tgtTbl}/${openTbl}/g;s/{cols}/${openCols}/g;s/{eventDestination}/${openDest}/g;s/{event}/${openEvent}/g" load.hql > load_${openTbl}.hql
+
+
+load_fact_email_open_table:
+    class: HiveTask
+    dependencies:
+        - prepare_fact_email_open_hql
+    configuration:
+        hql_file: load_${openTbl}.hql
+
+
+prepare_fact_email_click_hql:
+   class: ScriptTask
+   dependencies:
+       - load_fact_email_open_table
+   configuration:
+       script: |
+          sed -e "s/{tgtTbl}/${clickTbl}/g;s/{cols}/${clickCols}/g;s/{eventDestination}/${clickDest}/g;s/{event}/${clickEvent}/g" load.hql > load_${clickTbl}.hql
+
+
+load_fact_email_click_table:
+    class: HiveTask
+    dependencies:
+        - prepare_fact_email_click_hql
+    configuration:
+        hql_file: load_${clickTbl}.hql
