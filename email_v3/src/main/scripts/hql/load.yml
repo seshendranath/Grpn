@@ -1,6 +1,6 @@
 context:
-  queue: dse_testing
-  tgtDb: svc_edw_dev_db
+  queue: edw_traffic_core
+  tgtDb: prod_groupondw
   srcTbl: grp_gdoop_pde.junohourly
   sendTbl: fact_email_send
   deliveryTbl: fact_email_delivery
@@ -14,10 +14,10 @@ context:
   deliveryEvent: emailDelivery
   openEvent: emailOpenHeader
   clickEvent: emailClick
-  sendCols: appVersion,businessGroup,campaignGroup,campaignId,consumerId,dealList,dealSource,emailHash,emailName,emailReceiverAddress,emailSubject,emailType,event,messageId,platform,sourceTopicName,virtualMta
-  deliveryCols: dlvDestinationIP,dlvSourceIP,dlvSize,dsnAction,dsnMTA,emailHash,emailName,emailReceiverAddress,emailSendId,emailType,errorMessage,event,hostIP,platform,rawEvent,virtualMta
-  openCols: appVersion,channel,clientPlatform,consumerId,countryCampaignID,division,event,eventTime,platform,rawEvent,sourceType,websiteId,emailsendid,bcookie,campaign,emailhash,medium,useragent
-  clickCols: emailsendid,emailhash,bcookie,appVersion,clickedon,clickdestination,division,position,clicksection,campaign,medium,channel,useragent,clientPlatform,consumerId,dealPermalink,sourceType,websiteId,event,eventtime
+  sendCols: additionalEmailAdrress,appVersion,businessGroup,campaignGroup,campaignId,consumerId,dealList,dealSource,emailFrom,emailHash,emailName,emailReceiverAddress,emailSendId,emailSenderScore,emailSubject,emailType,eventTime,injector,locale,messageId,messageRequestTime,platform,subscriptionListId,userId,variantName,virtualMta
+  deliveryCols: bounceCategory,hostIP,dlvSourceIP,dlvDestinationIP,dlvSize,virtualMta,emailName,emailHash,emailSendId,testGroup,sendAddress,emailReceiverAddress,address,dsnAction,status,errorMessage,dsnMTA,emailType,userId,platform
+  openCols: appVersion,bcookie,brand,campaign,channel,clientPlatform,consumerId,countryCampaignID,dealUUID,division,emailHash,emailSendId,medium,platform,position,userAgent,websiteId
+  clickCols: appVersion,bcookie,campaign,channel,clickDestination,clickSection,clickedOn,clientPlatform,consumerId,countryCampaignID,dealPermalink,division,emailHash,emailSendId,medium,platform,position,userAgent,websiteId
 
 load_start:
     class: NopTask

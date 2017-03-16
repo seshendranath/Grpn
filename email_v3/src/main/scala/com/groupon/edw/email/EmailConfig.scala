@@ -39,7 +39,7 @@ object EmailConfig {
 
   case class Config(sourceDb: String = "grp_gdoop_pde",
                     sourceTable: String = "junohourly",
-                    targetDb: String = "svc_edw_dev_db",
+                    targetDb: String = "prod_groupondw",
                     targetTable: String = "agg_email",
                     stgTable: String = "agg_email_stg",
                     startTimeStamp: Option[String] = None,
@@ -86,7 +86,7 @@ object EmailConfig {
   val eventsMap: Map[String, String] = Map("emailDelivery" -> "delivery", "emailSend" -> "send",
     "emailOpenHeader" -> "open", "emailClick" -> "click", "emailBounce" -> "bounce")
 
-  val targetLocation = "/user/grp_gdoop_edw_etl_dev/email/res"
+  val targetLocation = "/user/grp_gdoop_edw_etl_prod/prod_groupondw/agg_email"
 
   val sizeThresholds = Map("emailDelivery" -> 107374182L, "emailSend" -> 107374182L, "emailBounce" -> 53687091L,
     "emailOpenHeader" -> 10737418L, "emailClick" -> 10737418L)

@@ -12,7 +12,7 @@ object Ultron {
 
   val client = new OkHttpClient()
 
-  val url = "http://ultron-staging-app1.snc1:9000/job/instance"
+  val url = "http://ultron-app1.snc1:9000/job/instance"
   val jobName = "email"
   val successCode = 200
   val timeout = 5.seconds
@@ -68,5 +68,5 @@ object Ultron {
   }
 }
 val (id, st) = startJob()
-// endJob(id, "succeeded", "2017-01-01 00:00:00", "2017-01-01 00:00:00")
+endJob(id, "succeeded", "2017-03-15 21:37:37", "2017-03-15 21:37:37")
 // endJob(id, "failed")

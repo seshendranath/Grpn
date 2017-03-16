@@ -38,6 +38,7 @@ object Email {
     def errorHandler(e: Exception) = {
       log.error("Something went WRONG during the run")
       log.error(e)
+      log.error(s"Updating Ultron instance $instanceId with Status: FAILED, StartTime: $startTime, EndTime: $startTime")
       endJob(instanceId, "failed", startTime, startTime)
     }
 
@@ -52,6 +53,7 @@ object Email {
     SparkSession
       .builder
       .appName("AggEmailPipeline")
+      .config("spark.sql.hive.convertMetastoreParquet", "false")
       .enableHiveSupport()
       .getOrCreate()
   }

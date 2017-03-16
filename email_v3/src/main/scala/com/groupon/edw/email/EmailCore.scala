@@ -45,7 +45,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
     if (dts.isEmpty) {
       log.info("No Dates to Process. Either the threshold is too high or the Upstream didn't write any files")
-      log.info("Updating Ultron Job Instance")
+      log.info(s"Updating Ultron Job Instance $instanceId with Status: SUCCEEDED, StartTime: $startDt, EndTime: $startDt")
       endJob(instanceId, "succeeded", startDt.toString(timeFormat), startDt.toString(timeFormat))
       System.exit(0)
     }
@@ -108,7 +108,8 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("=" * 30 + "Batch Finished" + "=" * 30)
 
     }
-    log.info("Updating Ultron Job Instance")
+
+    log.info(s"Updating Ultron Job Instance $instanceId with Status: SUCCEEDED, StartTime: $startDt, EndTime: $endDt")
     endJob(instanceId, "succeeded", startDt.toString(timeFormat), endDt.toString(timeFormat))
     log.info("=" * 30 + "Process Finished" + "=" * 30)
   }
@@ -220,6 +221,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     emailSendId
          |    ,emailHash
          |    ,country
+         |    ,MIN(event_date) AS event_date
          |    ,MIN(emailSubject) AS emailSubject
          |    ,MIN(campaignGroup) AS campaignGroup
          |    ,MIN(businessGroup) AS businessGroup
@@ -228,6 +230,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |            emailSendId
          |           ,SHA2(CONCAT('$emailSalt', emailReceiverAddress), 256) AS emailHash
          |           ,country
+         |           ,event_date
          |           ,emailSubject
          |           ,campaignGroup
          |           ,businessGroup
@@ -378,6 +381,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |         ,COALESCE(d.emailHash, s.emailHash, o.emailHash, c.emailHash, b.emailHash) as emailHash
          |         ,COALESCE(d.country, s.country, o.country, c.country, b.country) AS country_code
          |         ,d.event_date AS send_date
+         |         ,s.event_date AS orig_send_date
          |         ,d.event_time AS send_timestamp
          |         ,d.emailName AS email_name
          |         ,s.emailSubject AS email_subject
@@ -426,6 +430,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,emailHash AS emailHash
          |     ,country_code AS country_code
          |     ,send_date AS send_date
+         |     ,orig_send_date AS orig_send_date
          |     ,send_timestamp AS send_timestamp
          |     ,email_name AS email_name
          |     ,email_subject AS email_subject
@@ -460,6 +465,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |          ,COALESCE(f.emailHash, s.emailHash) AS emailHash
          |          ,COALESCE(f.country_code, s.country_code) AS country_code
          |          ,LEAST(f.send_date, s.send_date, '$defaultDate') AS send_date
+         |          ,LEAST(f.orig_send_date, s.orig_send_date) AS orig_send_date
          |          ,LEAST(f.send_timestamp, s.send_timestamp) AS send_timestamp
          |          ,COALESCE(f.email_name, s.email_name) AS email_name
          |          ,COALESCE(f.email_subject, s.email_subject) AS email_subject
@@ -485,6 +491,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |      FULL OUTER JOIN stg_agg_email s
          |      ON s.send_id = f.send_id  AND s.emailHash = f.emailHash AND s.country_code = f.country_code
          |    ) a
+         | WHERE LEAST(a.orig_send_date, a.first_open_date, a.first_click_date, a.first_bounce_date) > '${startDate.minusDays(offset).toString(yyyy_MM_dd)}'
       """.stripMargin
 
     log.info("Final query" + qry)
