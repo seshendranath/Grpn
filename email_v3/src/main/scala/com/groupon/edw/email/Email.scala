@@ -40,6 +40,8 @@ object Email {
       log.error(e)
       log.error(s"Updating Ultron instance $instanceId with Status: FAILED, StartTime: $startTime, EndTime: $startTime")
       endJob(instanceId, "failed", startTime, startTime)
+      log.error("Exiting with FAILED status and exit code 1")
+      System.exit(1)
     }
 
     val e = System.nanoTime()

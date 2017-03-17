@@ -75,7 +75,8 @@ object EmailConfig {
                     defaultDate: String = "9999-12-31",
                     stgOutputNumFiles: Int = 100,
                     defaultOutputNoFiles: Int = 1,
-                    outNoFilesPerCountry: Map[String, Int] = outNoFilesPerCountry
+                    outNoFilesPerCountry: Map[String, Int] = outNoFilesPerCountry,
+                    srcFilter: String = srcFilter
                    )
 
 
@@ -98,4 +99,5 @@ object EmailConfig {
   val outNoFilesPerCountry = Map("AE" -> 2, "AU" -> 4, "BE" -> 3, "CA" -> 2, "DE" -> 10, "ES" -> 10, "FR" -> 25, "IE" -> 1,
     "IT" -> 20, "JP" -> 8, "NL" -> 3, "NZ" -> 1, "PL" -> 3, "UK" -> 40, "US" -> 160)
 
+  val srcFilter: String = "emailSendId IS NOT NULL AND emailHash IS NOT NULL"
 }

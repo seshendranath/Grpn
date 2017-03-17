@@ -126,7 +126,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     log.info(s"Defining source views for $event")
 
     val df = spark.read.format(format).load(files: _*)
-      .filter(s"$sourceCountryColumn in (${seqToQuotedString(countries)})")
+      .filter(s"$sourceCountryColumn in (${seqToQuotedString(countries)}) AND $srcFilter")
       .withColumn(s"$eventDateCol", from_unixtime(expr(s"$eventTimeCol") / 1000, yyyy_MM_dd))
 
     df.createOrReplaceTempView(eventsMap(event))
@@ -279,7 +279,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       s"""
          | SELECT
          |      emailSendId
-         |     ,emailHash
+         |     ,SUBSTRING(emailHash, 0, 64) AS emailHash
          |     ,country
          |     ,MIN(event_date) AS event_date
          |     ,MIN(userAgent) AS userAgent
@@ -299,7 +299,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       s"""
          | SELECT
          |      emailSendId
-         |     ,emailHash
+         |     ,SUBSTRING(emailHash, 0, 64) AS emailHash
          |     ,country
          |     ,MIN(event_date) AS event_date
          |     ,MIN(userAgent) AS userAgent
@@ -491,7 +491,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |      FULL OUTER JOIN stg_agg_email s
          |      ON s.send_id = f.send_id  AND s.emailHash = f.emailHash AND s.country_code = f.country_code
          |    ) a
-         | WHERE LEAST(a.orig_send_date, a.first_open_date, a.first_click_date, a.first_bounce_date) > '${startDate.minusDays(offset).toString(yyyy_MM_dd)}'
+         | WHERE send_date != '$defaultDate' OR (send_date = '$defaultDate' AND LEAST(a.orig_send_date, a.first_open_date, a.first_click_date, a.first_bounce_date) > '${startDate.minusDays(offset).toString(yyyy_MM_dd)}')
       """.stripMargin
 
     log.info("Final query" + qry)

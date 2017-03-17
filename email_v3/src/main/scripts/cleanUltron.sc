@@ -20,10 +20,11 @@ def kill(id: String) = {
 
   val endRequest = new Request.Builder()
     .url(s"http://ultron-app1.snc1:9000/job/instance/end/$id/failed")
-    .post()
+    .post(RequestBody.create(null, Array[Byte]()))
   val response = client.newCall(endRequest.build()).execute()
   println(response.code())
   println(response.message())
   println(new String(response.body().bytes()))
 }
-
+// 2017-03-15 21:37:36
+// 2017-03-16 03:16:59
