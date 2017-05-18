@@ -47,6 +47,9 @@ object Utils {
   val (instanceId, startTime) = startJob()
   log.info(s"Ultron StartTime: $startTime")
 
+  /**
+    * Mapping Input/Output formats from Hive to Spark
+    */
   def getSparkFileFormat(fileFormat: String): String = {
     val format = fileFormat.toLowerCase
 
@@ -57,6 +60,9 @@ object Utils {
 
   }
 
+  /**
+    * Calculate Start and End Timestamp
+    */
   def getStartEndTimeStamp(startTimeStamp: Option[String], endTimeStamp: Option[String]): (DateTime, DateTime) = {
 
     // val startDt = if (startTimeStamp.isDefined) DateTime.parse(startTimeStamp.getOrElse("None"), formatter) else DateTime.now - 1.day
@@ -114,6 +120,9 @@ object Utils {
     res.stripSuffix(",")
   }
 
+  /**
+    * Checks the DDL info of the passed table and verifies it against passed info
+    */
   def checkAndCreateHiveDDL(hiveMetaStore: HiveMetaStoreClient, dbName: String, tblName: String, format: String,
                             location: String, cols: Seq[(String, String)], partCols: Seq[String]) = {
 

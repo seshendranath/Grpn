@@ -23,6 +23,10 @@ object Ultron {
   val successCode = 200
   val timeout = 5.seconds
 
+  /**
+    * 1. Makes the Ultron API call to start a new instance
+    * 2. Ultron gives back Instance ID and data start timestamp of the last SUCCESSFUL run of the job
+    */
   def startJob() = {
     val request = new Request.Builder()
       .url(s"$url/start/$jobName")
@@ -37,6 +41,10 @@ object Ultron {
     (instanceId, dataStartTimestamp)
   }
 
+  /**
+    * 1. Makes the Ultron API call to end the current instance
+    * 2. Ultron gives back success code
+    */
   def endJob(instanceId: String, status: String, dataStartTimestamp: String, dataEndTimestamp: String) = {
 
     val requestBody = Json.obj(
@@ -54,6 +62,9 @@ object Ultron {
     checkResponseStatus(response.code(), response.message())
   }
 
+  /**
+    * check whether the returned code is a success code or not
+    */
   def checkResponseStatus(code: Int, message: String) = {
     if (code != successCode) {
       log.info(s"Response Code: $code")

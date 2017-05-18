@@ -114,6 +114,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     log.info("=" * 30 + "Process Finished" + "=" * 30)
   }
 
+  /**
+    * Get all modified Files from HDFS between specified startDate and endDate
+    */
   def getFiles(batchStartDate: DateTime, batchEndDate: DateTime, dateFilesMap: Map[String, Seq[String]]): Seq[String] = {
 
     dateFilesMap
@@ -121,6 +124,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       .flatMap { case (_, files) => files }.toSeq
   }
 
+  /**
+    * Create Dataframe for the passed platform and event by reading the specified files
+    */
   def createDF(platform: String, event: String, format: String, files: Seq[String]): Unit = {
 
     log.info(s"Defining source views for $platform and $event")
@@ -133,6 +139,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
 
   }
 
+  /**
+    * Extract all modified Files from HDFS between specified startTime and endTime
+    */
   def extractDatesAndFilesToProcess(startDt: DateTime, endDt: DateTime): Map[String, Map[String, Seq[String]]] = {
 
     val datePattern = raw"\d{4}-\d{2}-\d{2}".r
@@ -142,6 +151,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       fileModTime >= startDt.getMillis && fileModTime <= endDt.getMillis
     }
 
+    // yield returns the result as Seq
     val eventDateFiles = for (platform <- eventsMap.keys; event <- eventsMap(platform).keys) yield {
 
       val path = new Path(s"$sourceLocation/${sourcePartitionLocation.format(dtPattern, platform, event)}")
@@ -171,6 +181,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     eventDateFiles.toMap
   }
 
+  /**
+    * Extract Column name and data type info from DataFrame
+    */
   def getColsFromDF(df: DataFrame, exclude: Seq[String]) = {
     log.info("Extracting Column Info from DataFrame")
     val cols = mutable.ArrayBuffer[(String, String)]()
@@ -183,6 +196,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     cols
   }
 
+  /**
+    * Move Data from temp to final location
+    */
   def moveStageToTargetHdfs() = {
     val tmpDirs = dfs.globStatus(new Path(tmpLocation + "/*" * finalPartCol.length)).map(fs => fs.getPath.toString)
     for (i <- tmpDirs) {
