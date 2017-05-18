@@ -1,10 +1,10 @@
-import okhttp3.{MediaType, OkHttpClient, RequestBody, Request}
+import okhttp3.{OkHttpClient, RequestBody, Request}
 import play.api.libs.json.{JsObject, Json}
 
 val client = new OkHttpClient()
 
 val requestRun = new Request.Builder()
-  .url("http://ultron-app1.snc1:9000/job/instance/list/f29b0f0d02bd11e7bd06002590a05bc0")
+  .url("http://ultron-staging-app.snc1/job/instance/list/f29b0f0d02bd11e7bd06002590a05bc0")
   .get()
 
 val responseRun = client.newCall(requestRun.build()).execute()
@@ -19,7 +19,7 @@ runs.as[List[JsObject]]
 def kill(id: String) = {
 
   val endRequest = new Request.Builder()
-    .url(s"http://ultron-app1.snc1:9000/job/instance/end/$id/failed")
+    .url(s"http://ultron-staging-app.snc1/job/instance/end/$id/failed")
     .post(RequestBody.create(null, Array[Byte]()))
   val response = client.newCall(endRequest.build()).execute()
   println(response.code())

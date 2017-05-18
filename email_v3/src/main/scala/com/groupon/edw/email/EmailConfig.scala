@@ -50,9 +50,8 @@ object EmailConfig {
                     stgInputFormat: String = "csv",
                     sourceCountryColumn: String = "country",
                     sourcePartitionLocation: String = "/eventDate=%s/platform=%s/eventDestination=%s",
-                    platform: String = "email",
-                    events: Array[String] = events,
-                    eventsMap: Map[String, String] = eventsMap,
+                    eventsMap: Map[String, Map[String, String]] = eventsMap,
+                    eventsMapInverse: Map[String, String] = eventsMapInverse,
                     eventDateCol: String = "event_date",
                     eventTimeCol: String = "eventTime",
                     targetLocation: String = targetLocation,
@@ -79,18 +78,18 @@ object EmailConfig {
                     srcFilter: String = srcFilter
                    )
 
-
   val countries = Seq("US", "CA", "BE", "FR", "DE", "IE", "IT", "NL", "PL", "ES", "AE", "UK", "JP", "AU", "NZ")
 
-  val events: Array[String] = Array("emailDelivery", "emailSend", "emailClick", "emailBounce")
+  val eventsMap: Map[String, Map[String, String]] = Map("email" -> Map("emailDelivery" -> "delivery", "emailSend" -> "send",
+    "emailClick" -> "eClick", "emailBounce" -> "bounce"),
+    "mobile" -> Map("emailClick" -> "mClick"))
 
-  val eventsMap: Map[String, String] = Map("emailDelivery" -> "delivery", "emailSend" -> "send",
-    "emailOpenHeader" -> "open", "emailClick" -> "click", "emailBounce" -> "bounce")
+  val eventsMapInverse: Map[String, String] = eventsMap.values.map(_.map(_.swap)).reduce(_ ++ _) ++ Map("open" -> "emailOpenHeader")
 
   val targetLocation = "/user/grp_gdoop_edw_etl_prod/prod_groupondw/agg_email"
 
   val sizeThresholds = Map("emailDelivery" -> 107374182L, "emailSend" -> 107374182L, "emailBounce" -> 53687091L,
-    "emailOpenHeader" -> 10737418L, "emailClick" -> 10737418L)
+    "emailOpenHeader" -> 10737418L, "emailClick" -> 5737418L)
 
 
   val tmpString: String = "_tmp"

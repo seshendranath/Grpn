@@ -1,7 +1,7 @@
 package com.groupon.edw.email
 
 /**
-   * Created by aguyyala on 2/16/17.
+  * Created by aguyyala on 2/16/17.
   */
 
 
@@ -31,7 +31,6 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
   val dfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
   val dfc = FileContext.getFileContext(spark.sparkContext.hadoopConfiguration)
   val hiveMetaStore = new HiveMetaStoreClient(new HiveConf())
-  val eventsMapInverse: Map[String, String] = eventsMap.map(_.swap)
   val sourceLocation = getHiveTableLocation(hiveMetaStore, sourceDb, sourceTable)
   val sourceInputFormat = getHiveInputFormat(hiveMetaStore, sourceDb, sourceTable)
 
@@ -57,11 +56,12 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       log.info("Processing batch " + (batchStartDate.toString(yyyy_MM_dd), batchEndDate.toString(yyyy_MM_dd)))
       val run_id = DateTime.now.toString("yyyyMMddHHmmss")
 
-      for (event <- events) {
 
-        log.info("Getting source files for *** " + event)
-        val files = getFiles(batchStartDate, batchEndDate, eventDateFilesMap(event))
-        createDF(event, sourceInputFormat, files)
+      for (platform <- eventsMap.keys; event <- eventsMap(platform).keys) {
+
+        log.info("Getting source files for *** " + platform + "_" + event)
+        val files = getFiles(batchStartDate, batchEndDate, eventDateFilesMap(platform + "_" + event))
+        createDF(platform, event, sourceInputFormat, files)
         log.info("=" * 200)
       }
 
@@ -121,15 +121,15 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       .flatMap { case (_, files) => files }.toSeq
   }
 
-  def createDF(event: String, format: String, files: Seq[String]): Unit = {
+  def createDF(platform: String, event: String, format: String, files: Seq[String]): Unit = {
 
-    log.info(s"Defining source views for $event")
+    log.info(s"Defining source views for $platform and $event")
 
     val df = spark.read.format(format).load(files: _*)
       .filter(s"$sourceCountryColumn in (${seqToQuotedString(countries)}) AND $srcFilter")
       .withColumn(s"$eventDateCol", from_unixtime(expr(s"$eventTimeCol") / 1000, yyyy_MM_dd))
 
-    df.createOrReplaceTempView(eventsMap(event))
+    df.createOrReplaceTempView(eventsMap(platform)(event))
 
   }
 
@@ -142,7 +142,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
       fileModTime >= startDt.getMillis && fileModTime <= endDt.getMillis
     }
 
-    val eventDateFiles = for (event <- events) yield {
+    val eventDateFiles = for (platform <- eventsMap.keys; event <- eventsMap(platform).keys) yield {
 
       val path = new Path(s"$sourceLocation/${sourcePartitionLocation.format(dtPattern, platform, event)}")
       // Getting source event directories that had been updated between startDt and endDt parameters
@@ -165,7 +165,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
         .filter { case (date, fs) => fs.map(_.getLen).sum > sizeThresholds(event) }
         .mapValues(_.map(_.getPath.toString).toSeq)
 
-      (event, filesByDate)
+      (platform + "_" + event, filesByDate)
     }
 
     eventDateFiles.toMap
@@ -211,6 +211,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     createEmailOpenStage()
     createEmailClickStage()
     createEmailBounceStage()
+    createMobileClickStage()
   }
 
 
@@ -225,6 +226,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |    ,MIN(emailSubject) AS emailSubject
          |    ,MIN(campaignGroup) AS campaignGroup
          |    ,MIN(businessGroup) AS businessGroup
+         |    ,MIN(brand) AS brand
          |FROM (
          |       SELECT
          |            emailSendId
@@ -234,6 +236,7 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |           ,emailSubject
          |           ,campaignGroup
          |           ,businessGroup
+         |           ,brand
          |       FROM send
          |     ) a
          | GROUP BY 1,2,3
@@ -282,8 +285,10 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,SUBSTRING(emailHash, 0, 64) AS emailHash
          |     ,country
          |     ,MIN(event_date) AS event_date
+         |     ,MIN(eventTime) AS eventTime
+         |     ,MIN(clientPlatform) AS clientPlatform
          |     ,MIN(userAgent) AS userAgent
-         | FROM click
+         | FROM eClick
          | WHERE event="${eventsMapInverse("open")}"
          | GROUP BY 1,2,3
       """.stripMargin
@@ -302,10 +307,12 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,SUBSTRING(emailHash, 0, 64) AS emailHash
          |     ,country
          |     ,MIN(event_date) AS event_date
+         |     ,MIN(eventTime) AS eventTime
+         |     ,MIN(clientPlatform) AS clientPlatform
          |     ,MIN(userAgent) AS userAgent
          |     ,MIN(CASE WHEN clickDestination LIKE '%unsub%' THEN event_date ELSE '$defaultDate' END) AS unsub_date
-         | FROM click
-         | WHERE event="${eventsMapInverse("click")}"
+         | FROM eClick
+         | WHERE event="${eventsMapInverse("eClick")}"
          | GROUP BY 1,2,3
       """.stripMargin
 
@@ -313,6 +320,29 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
     val clickDF = sql(qry)
     clickDF.createOrReplaceTempView("stg_email_click")
     log.info("EmailClickStage:" + qry)
+
+  }
+
+  def createMobileClickStage() = {
+    val qry =
+      s"""
+         | SELECT
+         |      emailSendId
+         |     ,SUBSTRING(emailHash, 0, 64) AS emailHash
+         |     ,country
+         |     ,MIN(event_date) AS event_date
+         |     ,MIN(eventTime) AS eventTime
+         |     ,MIN(clientPlatform) AS clientPlatform
+         |     ,MIN(userAgent) AS userAgent
+         |     ,MIN(CASE WHEN clickDestination LIKE '%unsub%' THEN event_date ELSE '$defaultDate' END) AS unsub_date
+         | FROM mClick
+         | GROUP BY 1,2,3
+      """.stripMargin
+
+
+    val clickDF = sql(qry)
+    clickDF.createOrReplaceTempView("stg_mobile_click")
+    log.info("MobileClickStage:" + qry)
 
   }
 
@@ -388,14 +418,29 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |         ,s.campaignGroup AS campaign_group
          |         ,s.businessGroup AS business_group
          |         ,o.userAgent AS first_open_user_agent
-         |         ,c.userAgent AS first_click_user_agent
+         |         ,CASE
+         |              WHEN COALESCE(c.eventTime, 9999999999999) <= COALESCE(mc.eventTime, 9999999999999) THEN c.userAgent
+         |              ELSE mc.userAgent
+         |          END AS first_click_user_agent
          |         ,o.event_date AS first_open_date
-         |         ,c.event_date AS first_click_date
-         |         ,c.unsub_date AS first_unsub_date
+         |         ,CASE
+         |              WHEN COALESCE(c.eventTime, 9999999999999) <= COALESCE(mc.eventTime, 9999999999999) THEN c.event_date
+         |              ELSE mc.event_date
+         |          END AS first_click_date
+         |         ,CASE
+         |              WHEN COALESCE(c.eventTime, 9999999999999) <= COALESCE(mc.eventTime, 9999999999999) THEN c.unsub_date
+         |              ELSE mc.unsub_date
+         |          END AS first_unsub_date
          |         ,b.event_date AS first_bounce_date
          |         ,b.complaint_date AS first_complaint_date
          |         ,b.softbounce_date AS first_softbounce_date
          |         ,b.hardbounce_date AS first_hardbounce_date
+         |         ,s.brand AS user_brand_affiliation
+         |         ,o.clientPlatform AS first_open_client_platform
+         |         ,CASE
+         |              WHEN COALESCE(c.eventTime, 9999999999999) <= COALESCE(mc.eventTime, 9999999999999) THEN c.clientPlatform
+         |              ELSE mc.clientPlatform
+         |          END AS first_click_client_platform
          |     FROM stg_email_bounce b
          |     FULL OUTER JOIN stg_email_click c
          |     ON b.emailSendId = c.emailSendId AND b.emailHash = c.emailHash AND b.country = c.country
@@ -409,6 +454,10 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ON COALESCE(s.emailSendId, o.emailSendId, c.emailSendId, b.emailSendId) = d.emailSendId
          |        AND COALESCE(s.emailHash, o.emailHash, c.emailHash, b.emailHash) = d.emailHash
          |        AND COALESCE(s.country, o.country, c.country, b.country) = d.country
+         |     FULL OUTER JOIN stg_mobile_click mc
+         |     ON COALESCE(s.emailSendId, o.emailSendId, c.emailSendId, b.emailSendId, d.emailSendId) = mc.emailSendId
+         |        AND COALESCE(s.emailHash, o.emailHash, c.emailHash, b.emailHash, d.emailHash) = mc.emailHash
+         |        AND COALESCE(s.country, o.country, c.country, b.country, d.country) = mc.country
          |    ) t
          | LEFT OUTER JOIN $dimUserTbl u
          | ON t.emailHash = u.encrypted_login_email AND t.country_code = u.country_code
@@ -457,6 +506,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |     ,CASE WHEN datediff(a.first_open_date, a.send_date) BETWEEN 0 AND 6 THEN 1 ELSE 0 END AS d7_open_cnt
          |     ,CASE WHEN datediff(a.first_click_date, a.send_date) BETWEEN 0 AND 6 THEN 1 ELSE 0 END AS d7_click_cnt
          |     ,CASE WHEN datediff(a.first_unsub_date, a.send_date) BETWEEN 0 AND 6 THEN 1 ELSE 0 END AS d7_unsub_cnt
+         |     ,user_brand_affiliation
+         |     ,first_open_client_platform
+         |     ,first_click_client_platform
          | FROM
          |    (
          |      SELECT
@@ -480,6 +532,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |          ,LEAST(f.first_complaint_date, s.first_complaint_date) AS first_complaint_date
          |          ,LEAST(f.first_softbounce_date, s.first_softbounce_date) AS first_softbounce_date
          |          ,LEAST(f.first_hardbounce_date, s.first_hardbounce_date) AS first_hardbounce_date
+         |          ,COALESCE(f.user_brand_affiliation, s.user_brand_affiliation) AS user_brand_affiliation
+         |          ,COALESCE(f.first_open_client_platform, s.first_open_client_platform) AS first_open_client_platform
+         |          ,COALESCE(f.first_click_client_platform, s.first_click_client_platform) AS first_click_client_platform
          |      FROM
          |          (
          |            SELECT *
@@ -491,7 +546,9 @@ class EmailCore(spark: SparkSession, emailConfig: EmailConfig.Config) {
          |      FULL OUTER JOIN stg_agg_email s
          |      ON s.send_id = f.send_id  AND s.emailHash = f.emailHash AND s.country_code = f.country_code
          |    ) a
-         | WHERE send_date != '$defaultDate' OR (send_date = '$defaultDate' AND LEAST(a.orig_send_date, a.first_open_date, a.first_click_date, a.first_bounce_date) > '${startDate.minusDays(offset).toString(yyyy_MM_dd)}')
+         | WHERE send_date != '$defaultDate' OR (send_date = '$defaultDate'
+         | AND
+         | LEAST(a.orig_send_date, a.first_open_date, a.first_click_date, a.first_bounce_date) > '${startDate.minusDays(offset).toString(yyyy_MM_dd)}')
       """.stripMargin
 
     log.info("Final query" + qry)

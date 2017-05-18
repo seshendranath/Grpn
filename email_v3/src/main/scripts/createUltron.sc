@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
   val client = new OkHttpClient()
 
-  val url = "http://ultron-app1.snc1:9000/job/instance"
+  val url = "http://ultron-staging-app.snc1/job/instance"
   val jobName = "email"
   val successCode = 200
   val timeout = 5.seconds
